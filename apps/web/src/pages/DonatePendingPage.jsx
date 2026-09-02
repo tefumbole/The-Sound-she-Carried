@@ -45,7 +45,7 @@ export default function DonatePendingPage() {
         ) : (
           <>
             <h1 className="font-display text-3xl">Approve on your phone</h1>
-            <p className="mt-3 text-chrome">Check the MoMo prompt and enter your PIN.</p>
+            <p className="mt-3 text-chrome">Check the MoMo / Orange Money prompt and enter your PIN.</p>
             <ul className="text-left text-sm mt-5 space-y-2 text-chrome">
               <li><strong className="text-white">MTN:</strong> dial *126#</li>
               <li><strong className="text-white">Orange:</strong> dial #150*47#</li>

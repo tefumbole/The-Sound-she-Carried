@@ -6,7 +6,7 @@ const TIERS = [500000, 300000, 200000, 100000];
 
 export default function GoldSponsorModal({ open, onClose, presetAmount }) {
   const [amount, setAmount] = useState(presetAmount || 500000);
-  const [method, setMethod] = useState('momo');
+  const [method, setMethod] = useState('mobile');
   const [phone, setPhone] = useState('');
   const [waDifferent, setWaDifferent] = useState(false);
   const [whatsapp, setWhatsapp] = useState('');
@@ -69,8 +69,8 @@ export default function GoldSponsorModal({ open, onClose, presetAmount }) {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {[['momo', 'MTN MoMo'], ['om', 'Orange Money'], ['card', 'Visa']].map(([v, label]) => (
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[['mobile', 'MoMo / OM'], ['card', 'Visa']].map(([v, label]) => (
             <button
               key={v}
               type="button"

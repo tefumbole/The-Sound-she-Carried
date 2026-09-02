@@ -54,7 +54,7 @@ export function Table({ rows }) {
             <tr key={d.id} className="border-t border-white/10">
               <td className="p-3">{d.holder_name || '—'}</td>
               <td className="p-3">{money(d.amount)}</td>
-              <td className="p-3 uppercase">{d.method}</td>
+              <td className="p-3">{d.method === 'card' ? 'Visa' : 'MoMo / OM'}</td>
               <td className="p-3">{d.status}</td>
             </tr>
           ))}

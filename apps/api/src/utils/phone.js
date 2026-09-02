@@ -19,6 +19,15 @@ export function toCampayMsisdn(input) {
   return `237${local}`;
 }
 
+export function toE164Any(input) {
+  const raw = String(input || '').trim();
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (raw.startsWith('+') && digits.length >= 8 && digits.length <= 15) return `+${digits}`;
+  if (digits.length >= 11 && digits.length <= 15) return `+${digits}`;
+  return toE164CM(raw);
+}
+
 export function looksLikePhone(name) {
   return /^\+?\d[\d\s-]{6,}$/.test(String(name || '').trim());
 }

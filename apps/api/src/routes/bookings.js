@@ -8,7 +8,7 @@ import { getPool } from '../db/pool.js';
 import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { getHolderName } from '../services/campayService.js';
 import { notifyBookingSubmitted, notifyBookingDecision, sendBookingOtp } from '../services/bookingNotify.js';
-import { toE164CM, looksLikePhone } from '../utils/phone.js';
+import { toE164Any, toE164CM, looksLikePhone } from '../utils/phone.js';
 
 const router = Router();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -57,7 +57,7 @@ router.get('/calendar', async (_req, res) => {
 router.get('/holder', async (req, res) => {
   try {
     const phone = toE164CM(req.query.phone);
-    if (!phone) return res.json({ name: null, error: 'Enter a valid Cameroon number starting with 6.' });
+    if (!phone) return res.json({ name: null });
     const name = await getHolderName(phone);
     res.json({ name: name && !looksLikePhone(name) ? name : null });
   } catch (err) {
@@ -66,8 +66,8 @@ router.get('/holder', async (req, res) => {
 });
 
 router.post('/otp', async (req, res) => {
-  const phone = toE164CM(req.body.phone);
-  if (!phone) return res.status(400).json({ error: 'Enter a valid Cameroon number.' });
+  const phone = toE164Any(req.body.phone);
+  if (!phone) return res.status(400).json({ error: 'Enter a valid phone number.' });
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const pool = getPool();
   await pool.query('UPDATE booking_otps SET used_at = NOW() WHERE phone = ? AND used_at IS NULL', [phone]);
@@ -87,7 +87,7 @@ router.post(
     { name: 'signature', maxCount: 1 },
   ]),
   async (req, res) => {
-    const phone = toE164CM(req.body.phone);
+    const phone = toE164Any(req.body.phone);
     const otp = String(req.body.otp || '').replace(/\D/g, '');
     const eventName = String(req.body.event_name || '').trim();
     const eventDate = String(req.body.event_date || '').trim();
@@ -102,9 +102,12 @@ router.post(
       extracted = {};
     }
 
-    if (!phone) return res.status(400).json({ error: 'Enter a valid Cameroon number.' });
+    if (!phone) return res.status(400).json({ error: 'Enter a valid phone number.' });
     if (!eventName || !eventDate || !eventTime) {
       return res.status(400).json({ error: 'Event, date, and time are required.' });
+    }
+    if (String(req.body.eula_accepted || '') !== '1') {
+      return res.status(400).json({ error: 'Please agree to the booking terms.' });
     }
     if (!/^\d{6}$/.test(otp)) return res.status(400).json({ error: 'Enter the 6-digit OTP.' });
 

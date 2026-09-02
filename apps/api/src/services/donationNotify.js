@@ -18,7 +18,7 @@ export async function notifyDonationSuccess(donation) {
   if (!snap.settings) return;
 
   const name = donation.holder_name || 'Friend';
-  const methodLabel = donation.method === 'card' ? 'Visa' : donation.method === 'om' ? 'Orange Money' : 'MoMo';
+  const methodLabel = donation.method === 'card' ? 'Visa' : 'MoMo / OM';
   const kindLabel = donation.kind === 'gold_sponsor' ? 'Gold Sponsor gift' : 'donation';
 
   if (Number(snap.settings.notify_donor) === 1 && donation.whatsapp_phone) {

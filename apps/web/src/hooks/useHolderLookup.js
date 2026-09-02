@@ -8,35 +8,36 @@ export function useHolderLookup(phone, enabled = true) {
 
   useEffect(() => {
     const digits = String(phone || '').replace(/\D/g, '');
+    const isCm = digits.startsWith('237') ? digits.slice(3) : digits;
+    const canLookup = enabled && ((digits.startsWith('237') && digits.length === 12) || (digits.length === 9 && digits[0] === '6'));
     if (!enabled) return;
-    if (digits.length < 9) {
-      setHolder('');
+    if (!canLookup) {
       setStatus('');
       setError('');
+      if (!(digits.length === 9 && digits[0] === '6') && !digits.startsWith('237')) {
+        setHolder((h) => h);
+      }
       return;
     }
-    if (digits.length === 9 && digits[0] !== '6') {
+    if (isCm.length === 9 && isCm[0] !== '6') {
       setHolder('');
-      setStatus('');
-      setError('Invalid phone number.');
+      setError('Invalid Cameroon number.');
       return;
     }
     const t = setTimeout(async () => {
       setStatus('Looking up name…');
       setError('');
       try {
-        const data = await api(`/donations/holder?phone=${encodeURIComponent(digits)}`);
+        const data = await api(`/donations/holder?phone=${encodeURIComponent(phone || digits)}`);
         if (data.name) {
           setHolder(data.name);
           setStatus('');
           setError('');
         } else {
-          setHolder('');
           setStatus('');
-          setError('Name not found for this number yet. You can still continue.');
+          setError('Name not found yet. You can type it.');
         }
       } catch {
-        setHolder('');
         setStatus('');
         setError('Could not look up this number.');
       }

@@ -46,7 +46,8 @@ router.get('/holder', async (req, res) => {
 
 router.post('/initiate', async (req, res) => {
   const amount = Math.round(Number(req.body.amount || 0));
-  const method = String(req.body.method || 'momo');
+  let method = String(req.body.method || 'mobile');
+  if (method === 'momo' || method === 'om') method = 'mobile';
   const kind = String(req.body.kind || 'gift') === 'gold_sponsor' ? 'gold_sponsor' : 'gift';
   const goldTiers = [100000, 200000, 300000, 500000];
   if (kind === 'gold_sponsor' && !goldTiers.includes(amount)) {
@@ -55,7 +56,7 @@ router.post('/initiate', async (req, res) => {
   if (!Number.isFinite(amount) || amount < 100) {
     return res.status(400).json({ error: 'Minimum donation is 100 F CFA.' });
   }
-  if (!['momo', 'om', 'card'].includes(method)) {
+  if (!['mobile', 'card'].includes(method)) {
     return res.status(400).json({ error: 'Invalid payment method.' });
   }
 

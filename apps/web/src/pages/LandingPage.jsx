@@ -32,13 +32,53 @@ function useCountdown(target) {
   return left;
 }
 
+function GoldSponsorSlider({ onPick }) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % GOLD_TIERS.length), 3800);
+    return () => clearInterval(id);
+  }, []);
+  const tier = GOLD_TIERS[index];
+  return (
+    <div className="glass-navy fade-up rounded-[1.25rem] sm:rounded-[1.6rem] p-4 sm:p-5 overflow-hidden">
+      <p className="text-[10px] tracking-[0.28em] uppercase text-gold">Partnership</p>
+      <h2 className="font-display text-xl sm:text-2xl gold-text mt-0.5">Gold Sponsors</h2>
+      <p className="text-xs sm:text-sm text-chrome mt-1 mb-3">Stand with the live recording.</p>
+      <button
+        type="button"
+        onClick={() => onPick(tier)}
+        className="w-full rounded-2xl border border-gold/50 bg-gold/10 min-h-[5rem] sm:min-h-[6.25rem] px-3 py-4 text-center hover:bg-gold/20 transition"
+      >
+        <p className="text-[10px] tracking-[0.25em] uppercase text-gold">Tier {index + 1} of {GOLD_TIERS.length}</p>
+        <p className="font-display text-2xl sm:text-3xl gold-text mt-1">{money(tier)}</p>
+        <p className="text-xs text-chrome mt-1.5">Tap to sponsor</p>
+      </button>
+      <div className="flex items-center justify-between mt-3">
+        <button type="button" className="text-gold min-h-10 px-3" onClick={() => setIndex((i) => (i - 1 + GOLD_TIERS.length) % GOLD_TIERS.length)}>‹</button>
+        <div className="flex gap-1.5">
+          {GOLD_TIERS.map((t, i) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setIndex(i)}
+              className={`h-1.5 rounded-full transition-all ${i === index ? 'w-6 bg-gold' : 'w-1.5 bg-white/25'}`}
+              aria-label={money(t)}
+            />
+          ))}
+        </div>
+        <button type="button" className="text-gold min-h-10 px-3" onClick={() => setIndex((i) => (i + 1) % GOLD_TIERS.length)}>›</button>
+      </div>
+    </div>
+  );
+}
+
 function Unit({ n, label }) {
   return (
-    <div className="tick text-center flex-1">
-      <div className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl gold-text leading-none tracking-tight">
+    <div className="tick text-center flex-1 min-w-0">
+      <div className="font-display text-[1.55rem] sm:text-4xl lg:text-5xl gold-text leading-none tracking-tight">
         {String(n).padStart(2, '0')}
       </div>
-      <div className="mt-2 text-[10px] sm:text-xs tracking-[0.28em] uppercase text-goldSoft">{label}</div>
+      <div className="mt-1 text-[8px] sm:text-[10px] tracking-[0.18em] uppercase text-goldSoft">{label}</div>
     </div>
   );
 }
@@ -60,6 +100,8 @@ export default function LandingPage() {
   }, []);
 
   const percent = stats?.percent ?? 26;
+  const raised = Number(stats?.raised ?? 1300000);
+  const onTrack = raised >= 2500000;
 
   function openGold(amount) {
     setGoldAmount(amount);
@@ -68,36 +110,34 @@ export default function LandingPage() {
 
   return (
     <div className="relative min-h-dvh bg-navy text-white overflow-x-hidden">
-      <div className="poster-stage" aria-hidden>
-        <img src="/poster.jpg" alt="" className="poster-fit" />
+      <div className="poster-stage is-preview" aria-hidden>
+        <img src="/poster-temp.jpg" alt="" className="poster-fit" />
         <div className="poster-veil" />
-        <div className="gold-waves" />
-        <div className="sparkles" />
       </div>
 
-      <div className="relative z-10 flex min-h-dvh flex-col md:flex-row md:items-center md:justify-between">
-        <header className="flex items-center justify-between px-4 pt-[max(0.9rem,env(safe-area-inset-top))] pb-2 md:absolute md:inset-x-0 md:top-0 md:px-8 md:py-6">
-          <img src="/logo.jpg" alt="The Sound She Carries" className="h-11 md:h-14 w-auto rounded-lg object-contain ring-1 ring-gold/35 logo-glow" />
-          <Link to="/admin/login" className="text-[11px] tracking-[0.22em] uppercase text-gold/80 hover:text-gold">Staff</Link>
+      <div className="relative z-10 flex min-h-dvh flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-6 px-3 sm:px-5 lg:px-8 pt-[max(0.7rem,env(safe-area-inset-top))] pb-[max(1.1rem,env(safe-area-inset-bottom))]">
+        <header className="flex items-center justify-between lg:absolute lg:inset-x-0 lg:top-0 lg:px-8 lg:pt-5">
+          <img src="/logo.jpg" alt="The Sound She Carries" className="h-10 sm:h-11 lg:h-12 w-auto rounded-lg object-contain ring-1 ring-gold/35 logo-glow" />
+          <Link to="/admin/login" className="text-[11px] tracking-[0.22em] uppercase text-gold/80 hover:text-gold min-h-10 inline-flex items-center">Staff</Link>
         </header>
 
-        <div className="h-[22vh] min-h-[120px] md:hidden" aria-hidden />
+        <div className="h-[26svh] min-h-[8.5rem] max-h-52 lg:hidden" aria-hidden />
 
-        <main className="w-full md:w-[min(40rem,50%)] md:pl-8 lg:pl-14 md:pr-4">
-          <div className="glass-navy fade-up mx-3 mb-3 rounded-[1.6rem] p-5 sm:p-7 md:mx-0 md:mb-8">
+        <main className="w-full lg:w-[min(36rem,48%)] lg:mt-[4.75rem] lg:mb-4">
+          <div className="glass-navy fade-up rounded-[1.25rem] sm:rounded-[1.6rem] p-4 sm:p-6 lg:p-7">
             <p className="text-center text-[10px] sm:text-xs tracking-[0.32em] uppercase text-gold">The Prophetic Minstrel</p>
-            <h1 className="font-display text-[1.7rem] sm:text-4xl md:text-5xl text-center leading-tight mt-2 gold-text">
+            <h1 className="font-display text-[1.45rem] sm:text-3xl lg:text-4xl text-center leading-tight mt-1.5 gold-text">
               The Sound She Carries
             </h1>
-            <p className="text-center italic font-serif text-goldSoft mt-1 text-lg sm:text-xl">Live Recording</p>
-            <p className="text-center mt-3 text-sm text-chrome">Lian Ministrel · 27 September · 5 PM</p>
-            <p className="text-center text-sm text-white/90">{stats?.venue || 'Chariot Banquet Hall, Mile 18 Buea'}</p>
+            <p className="text-center italic font-serif text-goldSoft mt-0.5 text-base sm:text-xl">Live Recording</p>
+            <p className="text-center mt-2 text-xs sm:text-sm text-chrome">Lian Ministrel · 27 September · 5 PM</p>
+            <p className="text-center text-xs sm:text-sm text-white/90">{stats?.venue || 'Chariot Banquet Hall, Mile 18 Buea'}</p>
 
-            <div className="gold-line my-5" />
+            <div className="gold-line my-3 sm:my-4" />
 
-            <div className="flex justify-center gap-2 sm:gap-4">
+            <div className="flex justify-center gap-1.5 sm:gap-3">
               {left.done ? (
-                <p className="font-display text-3xl gold-text">The sound is live.</p>
+                <p className="font-display text-2xl sm:text-3xl gold-text">The sound is live.</p>
               ) : (
                 <>
                   <Unit n={left.d} label="Days" />
@@ -108,30 +148,41 @@ export default function LandingPage() {
               )}
             </div>
 
-            <div className="mt-7">
-              <div className="flex justify-between gap-3 text-[11px] uppercase tracking-wider text-chrome mb-2">
-                <span>Raised {money(stats?.raised)}</span>
-                <span>Target {money(stats?.target)}</span>
+            <div className="mt-4 sm:mt-5">
+              <div className="flex justify-between gap-3 text-[10px] sm:text-[11px] uppercase tracking-wider mb-2">
+                <span className={onTrack ? 'text-goldSoft' : 'text-rose-300'}>Raised {money(stats?.raised)}</span>
+                <span className="text-chrome">Target {money(stats?.target)}</span>
               </div>
-              <div className="h-2.5 rounded-full bg-white/10 overflow-hidden ring-1 ring-gold/20">
-                <div className="h-full rounded-full progress-sheen bg-gradient-to-r from-bronze via-gold to-goldSoft" style={{ width: `${percent}%` }} />
+              <div className={`h-2 sm:h-2.5 rounded-full bg-white/10 overflow-hidden ring-1 ${onTrack ? 'ring-gold/20' : 'ring-rose-400/40'}`}>
+                <div
+                  className={`h-full rounded-full progress-sheen ${
+                    onTrack
+                      ? 'bg-gradient-to-r from-bronze via-gold to-goldSoft'
+                      : 'bg-gradient-to-r from-rose-800 via-rose-500 to-orange-400'
+                  }`}
+                  style={{ width: `${percent}%` }}
+                />
               </div>
-              <p className="text-center text-sm mt-2 text-chrome">{percent}% funded · {money(stats?.pending)} still pending</p>
+              <p className={`text-center text-xs sm:text-sm mt-2 leading-snug ${onTrack ? 'text-goldSoft' : 'text-rose-300'}`}>
+                {onTrack
+                  ? `${percent}% funded · ${money(stats?.pending)} still pending`
+                  : `${percent}% funded · below 2,500,000 F CFA — we still need more`}
+              </p>
             </div>
 
-            <button onClick={() => setOpen(true)} className="btn-donate btn-pulse w-full mt-6 rounded-2xl min-h-12 py-3.5 text-base sm:text-lg font-semibold">
+            <button onClick={() => setOpen(true)} className="btn-donate btn-pulse w-full mt-4 sm:mt-5 rounded-2xl min-h-12 py-3 text-base sm:text-lg font-semibold">
               Donate
             </button>
 
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <Link to="/book" className="rounded-xl min-h-12 border border-gold/40 text-goldSoft text-sm inline-flex items-center justify-center hover:bg-gold/10">
+            <div className="grid grid-cols-2 gap-2 mt-2.5">
+              <Link to="/book" className="rounded-xl min-h-11 sm:min-h-12 border border-gold/40 text-goldSoft text-sm inline-flex items-center justify-center hover:bg-gold/10">
                 Book
               </Link>
               <a
                 href={WHATSAPP}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-xl min-h-12 border border-gold/40 text-goldSoft text-sm inline-flex items-center justify-center hover:bg-gold/10"
+                className="rounded-xl min-h-11 sm:min-h-12 border border-gold/40 text-goldSoft text-sm inline-flex items-center justify-center hover:bg-gold/10"
               >
                 Contact Us
               </a>
@@ -139,24 +190,8 @@ export default function LandingPage() {
           </div>
         </main>
 
-        <aside className="w-full md:w-[min(22rem,28%)] md:pr-8 lg:pr-12 px-3 md:px-0 pb-[max(0.85rem,env(safe-area-inset-bottom))] md:pb-0">
-          <div className="glass-navy fade-up rounded-[1.6rem] p-5 md:p-6">
-            <p className="text-[10px] tracking-[0.28em] uppercase text-gold">Partnership</p>
-            <h2 className="font-display text-2xl md:text-3xl gold-text mt-1">Gold Sponsors</h2>
-            <p className="text-sm text-chrome mt-2 mb-4">Stand with the live recording.</p>
-            <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
-              {GOLD_TIERS.map((tier) => (
-                <button
-                  key={tier}
-                  type="button"
-                  onClick={() => openGold(tier)}
-                  className="rounded-xl min-h-12 border border-gold/40 text-goldSoft hover:bg-gold/15 hover:text-white"
-                >
-                  {money(tier)}
-                </button>
-              ))}
-            </div>
-          </div>
+        <aside className="w-full lg:w-[min(20rem,26%)] lg:mt-[4.75rem] lg:mb-4 lg:self-center">
+          <GoldSponsorSlider onPick={openGold} />
         </aside>
       </div>
       <DonateModal open={open} onClose={() => setOpen(false)} />

@@ -10,7 +10,7 @@ export default function SignaturePad({ onChange }) {
     const resize = () => {
       const ratio = window.devicePixelRatio || 1;
       const width = canvas.clientWidth;
-      const height = 160;
+      const height = 110;
       canvas.width = width * ratio;
       canvas.height = height * ratio;
       const ctx = canvas.getContext('2d');
@@ -73,7 +73,7 @@ export default function SignaturePad({ onChange }) {
     <div>
       <canvas
         ref={canvasRef}
-        className="w-full h-40 rounded-xl bg-white touch-none"
+        className="w-full h-28 rounded-xl bg-white touch-none"
         onMouseDown={start}
         onMouseMove={move}
         onMouseUp={end}

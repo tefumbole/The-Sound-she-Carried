@@ -4,20 +4,23 @@ import { api } from '../lib/api';
 import { useHolderLookup } from '../hooks/useHolderLookup';
 import BookingCalendar from '../components/BookingCalendar';
 import SignaturePad from '../components/SignaturePad';
-import { readIdDocument } from '../lib/readIdDocument';
+import PhoneInput from '../components/PhoneInput';
+import { COUNTRIES, toIntl } from '../lib/countries';
+
+const EULA = `By requesting this date, I agree that Lian Ministrel (The Prophetic Minstrel) may accept or decline, that I will honour agreed fees, travel, and timing, treat her and the team with respect, and will not sell or commercially stream her performance without written permission.`;
 
 export default function BookingPage() {
-  const [phone, setPhone] = useState('');
-  const lookup = useHolderLookup(phone, true);
+  const [iso, setIso] = useState('CM');
+  const [local, setLocal] = useState('');
+  const phone = toIntl((COUNTRIES.find((c) => c.iso === iso) || COUNTRIES[0]).dial, local);
+  const lookup = useHolderLookup(phone, iso === 'CM');
   const [eventName, setEventName] = useState('');
   const [eventDate, setEventDate] = useState('');
   const [eventTime, setEventTime] = useState('17:00');
   const [description, setDescription] = useState('');
-  const [idType, setIdType] = useState('id');
-  const [idFile, setIdFile] = useState(null);
-  const [extracted, setExtracted] = useState(null);
-  const [reading, setReading] = useState(false);
+  const [showSign, setShowSign] = useState(false);
   const [signature, setSignature] = useState(null);
+  const [agreed, setAgreed] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
   const [calendar, setCalendar] = useState({ booked: [], pending: [] });
@@ -28,23 +31,6 @@ export default function BookingPage() {
   useEffect(() => {
     api('/bookings/calendar').then(setCalendar).catch(() => {});
   }, []);
-
-  async function onId(file) {
-    setIdFile(file);
-    setExtracted(null);
-    if (!file) return;
-    setReading(true);
-    setError('');
-    try {
-      const data = await readIdDocument(file);
-      setExtracted(data);
-      if (data.full_name && !lookup.holder) lookup.setHolder(data.full_name);
-    } catch {
-      setError('Could not read the document. Try a clearer photo.');
-    } finally {
-      setReading(false);
-    }
-  }
 
   async function requestOtp() {
     setBusy(true);
@@ -61,8 +47,13 @@ export default function BookingPage() {
 
   async function submit(e) {
     e.preventDefault();
+    if (!agreed) {
+      setError('Please agree to the booking terms.');
+      return;
+    }
     if (!signature) {
-      setError('Please draw your signature.');
+      setError('Please add your signature.');
+      setShowSign(true);
       return;
     }
     if (!otpSent) {
@@ -74,15 +65,13 @@ export default function BookingPage() {
     try {
       const form = new FormData();
       form.append('phone', phone);
-      form.append('holder_name', lookup.holder || extracted?.full_name || '');
+      form.append('holder_name', lookup.holder);
       form.append('event_name', eventName);
       form.append('event_date', eventDate);
       form.append('event_time', eventTime);
       form.append('description', description);
-      form.append('id_type', idType);
       form.append('otp', otp);
-      form.append('id_extracted', JSON.stringify(extracted || {}));
-      if (idFile) form.append('id_document', idFile);
+      form.append('eula_accepted', '1');
       form.append('signature', signature, 'signature.png');
       await api('/bookings', { method: 'POST', body: form });
       setDone(true);
@@ -100,9 +89,9 @@ export default function BookingPage() {
         <p className="text-[10px] tracking-[0.25em] uppercase text-gold">The Prophetic Minstrel</p>
         <span />
       </header>
-      <main className="max-w-xl mx-auto px-4 pb-16">
-        <h1 className="font-display text-3xl gold-text">Book Lian Ministrel</h1>
-        <p className="text-chrome text-sm mt-2 mb-6">Request a date. She will approve or decline by WhatsApp.</p>
+      <main className="max-w-4xl mx-auto px-4 pb-10">
+        <h1 className="font-display text-2xl sm:text-3xl gold-text">Book Lian Ministrel</h1>
+        <p className="text-chrome text-sm mt-1 mb-4">Request a date. She will approve or decline by WhatsApp.</p>
 
         {done ? (
           <div className="glass-navy rounded-3xl p-6 text-center">
@@ -111,61 +100,65 @@ export default function BookingPage() {
             <Link to="/" className="btn-donate inline-block mt-6 rounded-xl px-6 py-3">Back home</Link>
           </div>
         ) : (
-          <form onSubmit={submit} className="glass-navy rounded-3xl p-5 space-y-4">
-            <div>
-              <label className="text-sm">Phone number</label>
-              <div className="flex gap-2 mt-1">
-                <span className="rounded-xl bg-navyMid px-3 min-h-12 inline-flex items-center text-gold">+237</span>
-                <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} className="flex-1 rounded-xl bg-white text-ink px-3 min-h-12" required />
+          <form onSubmit={submit} className="glass-navy rounded-3xl p-4 sm:p-5 space-y-3">
+            <div className="grid md:grid-cols-2 gap-4 md:gap-5 items-start">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-gold/80">Phone number</label>
+                  <div className="mt-1">
+                    <PhoneInput iso={iso} local={local} onIso={setIso} onLocal={setLocal} required />
+                  </div>
+                  <input
+                    value={lookup.holder}
+                    onChange={(e) => lookup.setHolder(e.target.value)}
+                    placeholder="Your name"
+                    className="w-full mt-2 rounded-lg bg-white text-ink px-3 min-h-10"
+                  />
+                  <p className={`text-xs mt-1 ${lookup.error ? 'text-red-300' : 'text-emerald-300'}`}>{lookup.error || lookup.status}</p>
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-gold/80">Event</label>
+                  <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Concert, worship night, private gathering…" className="w-full mt-1 rounded-lg bg-white text-ink px-3 min-h-10" required />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-wider text-gold/80">Time</label>
+                  <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="w-full mt-1 rounded-lg bg-white text-ink px-3 min-h-10" required />
+                </div>
               </div>
-              {lookup.holder && <p className="text-goldSoft text-sm mt-2">Name: <strong>{lookup.holder}</strong></p>}
-              <p className={`text-xs mt-1 ${lookup.error ? 'text-red-300' : 'text-emerald-300'}`}>{lookup.error || lookup.status}</p>
-            </div>
-
-            <div>
-              <label className="text-sm">Event</label>
-              <input value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="Concert, worship night, private gathering…" className="w-full mt-1 rounded-xl bg-white text-ink px-3 min-h-12" required />
-            </div>
-
-            <div>
-              <label className="text-sm mb-2 block">Date — booked days are marked in gold</label>
-              <BookingCalendar booked={calendar.booked} pending={calendar.pending} value={eventDate} onChange={setEventDate} />
-              {eventDate && <p className="text-sm text-goldSoft mt-2">Selected: {eventDate}</p>}
-            </div>
-
-            <div>
-              <label className="text-sm">Time</label>
-              <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="w-full mt-1 rounded-xl bg-white text-ink px-3 min-h-12" required />
-            </div>
-
-            <div>
-              <label className="text-sm">Short description</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full mt-1 rounded-xl bg-white text-ink px-3 py-2" placeholder="Venue, audience, what you need…" />
-            </div>
-
-            <div>
-              <p className="text-sm mb-2">Scan ID or passport</p>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                {[['id', 'National ID'], ['passport', 'Passport']].map(([v, label]) => (
-                  <button key={v} type="button" onClick={() => setIdType(v)} className={`rounded-xl min-h-11 border ${idType === v ? 'border-gold bg-gold/15 text-goldSoft' : 'border-white/15'}`}>{label}</button>
-                ))}
+              <div>
+                <label className="text-xs uppercase tracking-wider text-gold/80 mb-1 block">Pick a date</label>
+                <BookingCalendar booked={calendar.booked} pending={calendar.pending} value={eventDate} onChange={setEventDate} />
               </div>
-              <input type="file" accept="image/*" capture="environment" onChange={(e) => onId(e.target.files?.[0] || null)} className="w-full text-sm" />
-              {reading && <p className="text-goldSoft text-sm mt-2 animate-pulse">Reading document…</p>}
-              {extracted && (
-                <div className="mt-3 rounded-xl bg-navyMid p-3 text-sm space-y-1">
-                  <p className="text-gold text-[10px] uppercase tracking-wider">Information read</p>
-                  <p>Name: {extracted.full_name || '—'}</p>
-                  <p>Document: {extracted.document_number || '—'}</p>
-                  <p>Date found: {extracted.expiry_or_dob || '—'}</p>
+            </div>
+
+            <div>
+              <label className="text-xs uppercase tracking-wider text-gold/80">Short description</label>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full mt-1 rounded-lg bg-white text-ink px-3 py-2" placeholder="Venue, audience, what you need…" />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="text-xs uppercase tracking-wider text-gold/80">Signature</label>
+                {!showSign ? (
+                  <button type="button" onClick={() => setShowSign(true)} className="text-sm text-gold border border-gold/40 rounded-lg px-3 min-h-9">Add</button>
+                ) : (
+                  <button type="button" onClick={() => { setShowSign(false); setSignature(null); }} className="text-sm text-chrome">Hide</button>
+                )}
+              </div>
+              {showSign && (
+                <div className="mt-2">
+                  <SignaturePad onChange={setSignature} />
                 </div>
               )}
             </div>
 
-            <div>
-              <label className="text-sm mb-2 block">Signature</label>
-              <SignaturePad onChange={setSignature} />
-            </div>
+            <label className="flex items-start gap-3 text-sm text-chrome bg-navy/40 rounded-xl p-3 border border-gold/20">
+              <input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} required />
+              <span>
+                <span className="text-gold text-[10px] uppercase tracking-wider block mb-1">End user booking agreement</span>
+                {EULA}
+              </span>
+            </label>
 
             {otpSent && (
               <div>

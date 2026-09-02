@@ -4,7 +4,7 @@ import { useHolderLookup } from '../hooks/useHolderLookup';
 
 export default function DonateModal({ open, onClose }) {
   const [amount, setAmount] = useState(2000);
-  const [method, setMethod] = useState('momo');
+  const [method, setMethod] = useState('mobile');
   const [phone, setPhone] = useState('');
   const lookup = useHolderLookup(phone, open && method !== 'card');
   const [waDifferent, setWaDifferent] = useState(false);
@@ -68,10 +68,9 @@ export default function DonateModal({ open, onClose }) {
         />
 
         <p className="text-sm mb-2">Payment method</p>
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-2 gap-2 mb-4">
           {[
-            ['momo', 'MTN MoMo'],
-            ['om', 'Orange Money'],
+            ['mobile', 'MoMo / OM'],
             ['card', 'Visa'],
           ].map(([v, label]) => (
             <button
@@ -120,8 +119,7 @@ export default function DonateModal({ open, onClose }) {
               {lookup.error || lookup.status}
             </p>
             <p className="text-xs text-chrome mb-3">
-              After you tap Donate, approve on your phone.
-              {method === 'om' ? ' Orange: dial #150*47#.' : ' MTN: dial *126#.'}
+              After you tap Donate, approve on your phone. MTN: *126# · Orange: #150*47#.
             </p>
           </>
         )}
