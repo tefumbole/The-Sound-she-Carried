@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api, money } from '../lib/api';
 import { useHolderLookup } from '../hooks/useHolderLookup';
 
 const TIERS = [500000, 300000, 200000, 100000];
 
-export default function GoldSponsorModal({ open, onClose }) {
-  const [amount, setAmount] = useState(500000);
+export default function GoldSponsorModal({ open, onClose, presetAmount }) {
+  const [amount, setAmount] = useState(presetAmount || 500000);
   const [method, setMethod] = useState('momo');
   const [phone, setPhone] = useState('');
   const [waDifferent, setWaDifferent] = useState(false);
@@ -13,6 +13,10 @@ export default function GoldSponsorModal({ open, onClose }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const lookup = useHolderLookup(phone, open && method !== 'card');
+
+  useEffect(() => {
+    if (open && presetAmount) setAmount(presetAmount);
+  }, [open, presetAmount]);
 
   if (!open) return null;
 

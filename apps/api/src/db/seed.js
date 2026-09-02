@@ -110,7 +110,7 @@ try {
         'The Sound She Carries',
         'Lian Ministrel',
         5000000,
-        3000000,
+        1300000,
         '2026-09-27 17:00:00',
         'Chariot Banquet Hall, Mile 18 Buea',
         '+237697470711,+237670706435,+237675321739',

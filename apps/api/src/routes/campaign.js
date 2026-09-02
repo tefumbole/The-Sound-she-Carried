@@ -16,7 +16,7 @@ router.get('/public', async (_req, res) => {
     raised: snap.raised,
     pending: snap.pending,
     percent: snap.percent,
-    contacts: ['+237697470711', '+237670706435'],
+    contacts: ['https://wa.me/237697470711'],
   });
 });
 

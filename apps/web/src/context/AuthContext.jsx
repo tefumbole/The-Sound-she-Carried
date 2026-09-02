@@ -35,13 +35,25 @@ export function AuthProvider({ children }) {
     permissions,
     loading,
     can: (code) => permissions.includes('*') || permissions.includes(code),
-    async login(email, password) {
-      const data = await api('/auth/login', {
+    async startLogin(email, password) {
+      return api('/auth/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
+    },
+    async verifyLoginOtp(challengeId, otp) {
+      const data = await api('/auth/verify-otp', {
+        method: 'POST',
+        body: JSON.stringify({ challenge_id: challengeId, otp }),
+      });
       setToken(data.access_token);
       await refresh();
+    },
+    async resendLoginOtp(challengeId) {
+      return api('/auth/resend-otp', {
+        method: 'POST',
+        body: JSON.stringify({ challenge_id: challengeId }),
+      });
     },
     logout() {
       setToken(null);

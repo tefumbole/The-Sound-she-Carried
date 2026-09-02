@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS campaign_settings (
   title VARCHAR(255) DEFAULT 'The Sound She Carries',
   artist VARCHAR(255) DEFAULT 'Lian Ministrel',
   target_amount BIGINT NOT NULL DEFAULT 5000000,
-  manual_raised BIGINT NOT NULL DEFAULT 3000000,
+  manual_raised BIGINT NOT NULL DEFAULT 1300000,
   concert_at DATETIME NOT NULL,
   venue VARCHAR(255) DEFAULT 'Chariot Banquet Hall, Mile 18 Buea',
   notify_donor TINYINT(1) NOT NULL DEFAULT 1,
@@ -298,6 +298,17 @@ CREATE TABLE IF NOT EXISTS bookings (
   UNIQUE KEY uk_bookings_review (review_token),
   INDEX idx_bookings_date (event_date),
   INDEX idx_bookings_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS login_otps (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  user_id CHAR(36) NOT NULL,
+  phone VARCHAR(50) NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_login_otps_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS booking_otps (
