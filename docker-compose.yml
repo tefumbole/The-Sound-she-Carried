@@ -1,0 +1,14 @@
+services:
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: tssc_local
+      MYSQL_DATABASE: tssc
+      MYSQL_USER: tssc
+      MYSQL_PASSWORD: tssc_local
+    volumes:
+      - tssc_mysql:/var/lib/mysql
+volumes:
+  tssc_mysql:

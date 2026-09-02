@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { min-height: 100%; }
+body { background: #0b0b0d; }
+
+.glass {
+  background: rgba(10, 10, 12, 0.62);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(197, 200, 206, 0.22);
+}
+
+.btn-donate {
+  background: linear-gradient(180deg, #b31f4d 0%, #8B1538 100%);
+  box-shadow: 0 8px 24px rgba(139, 21, 56, 0.45);
+}
+
+.chrome-text {
+  background: linear-gradient(180deg, #f4f5f7 0%, #9aa0a8 55%, #e8eaed 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.field {
+  @apply w-full rounded-xl px-3 py-2 text-ink;
+}
