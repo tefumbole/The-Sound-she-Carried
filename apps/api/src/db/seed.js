@@ -29,6 +29,9 @@ const PERMISSIONS = [
   ['menu.tasks', 'Menu tasks'],
   ['menu.announcements', 'Menu announcements'],
   ['menu.letters', 'Menu letters'],
+  ['bookings.view', 'View bookings'],
+  ['bookings.decide', 'Approve or reject bookings'],
+  ['menu.bookings', 'Menu bookings'],
 ];
 
 const ROLE_MAP = {
@@ -40,6 +43,7 @@ const ROLE_MAP = {
     'announcements.view', 'announcements.compose',
     'letters.view', 'letters.compose',
     'menu.campaign', 'menu.users', 'menu.tasks', 'menu.announcements', 'menu.letters',
+    'bookings.view', 'menu.bookings',
   ],
   approver: ['letters.view', 'letters.approve', 'menu.letters', 'campaign.view', 'menu.campaign'],
   signer: ['letters.view', 'letters.sign', 'menu.letters', 'campaign.view', 'menu.campaign'],
@@ -77,25 +81,25 @@ try {
   }
 
   const email = process.env.SEED_ADMIN_EMAIL || 'admin@tssc.cloud';
+  const adminPhone = process.env.SEED_ADMIN_PHONE || '+237675321739';
+  const hash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'system', 10);
   const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
   if (!existing[0]) {
-    const hash = await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD || 'ChangeMe123!', 10);
     await pool.query(
       `INSERT INTO users (id, email, password_hash, name, phone, whatsapp_phone, role, status)
        VALUES (?, ?, ?, ?, ?, ?, 'super_admin', 'active')`,
-      [
-        randomUUID(),
-        email,
-        hash,
-        process.env.SEED_ADMIN_NAME || 'TSSC Admin',
-        process.env.SEED_ADMIN_PHONE || '+237697470711',
-        process.env.SEED_ADMIN_PHONE || '+237697470711',
-      ]
+      [randomUUID(), email, hash, process.env.SEED_ADMIN_NAME || 'TSSC Admin', adminPhone, adminPhone]
     );
     console.log('Seeded admin:', email);
+  } else {
+    await pool.query(
+      `UPDATE users SET password_hash = ?, phone = ?, whatsapp_phone = ?, role = 'super_admin', status = 'active' WHERE email = ?`,
+      [hash, adminPhone, adminPhone, email]
+    );
+    console.log('Updated admin:', email);
   }
 
-  const [campaign] = await pool.query('SELECT id FROM campaign_settings LIMIT 1');
+  const [campaign] = await pool.query('SELECT id, admin_phones FROM campaign_settings LIMIT 1');
   if (!campaign[0]) {
     await pool.query(
       `INSERT INTO campaign_settings
@@ -109,10 +113,18 @@ try {
         3000000,
         '2026-09-27 17:00:00',
         'Chariot Banquet Hall, Mile 18 Buea',
-        '+237697470711,+237670706435',
+        '+237697470711,+237670706435,+237675321739',
       ]
     );
     console.log('Seeded campaign settings');
+  } else {
+    const phones = String(campaign[0].admin_phones || '');
+    if (!phones.includes('675321739')) {
+      await pool.query(
+        `UPDATE campaign_settings SET admin_phones = ? WHERE id = ?`,
+        [`${phones ? `${phones},` : ''}+237675321739`, campaign[0].id]
+      );
+    }
   }
 
   const [ann] = await pool.query('SELECT id FROM announcement_settings LIMIT 1');

@@ -44,6 +44,14 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    location /campay/ {
+        proxy_pass http://127.0.0.1:3005/campay/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     location /api/ {
         proxy_pass http://127.0.0.1:3005/;
         proxy_set_header Host $host;
@@ -70,5 +78,7 @@ CORS_ORIGIN=https://tssc.cloud
 APP_URL=https://tssc.cloud
 ```
 
-Campay webhook: `https://tssc.cloud/api/donations/campay/webhook`  
+Campay webhook: `https://tssc.cloud/campay/webhook`  
+Campay webhook (catcher): `https://www.tssc.cloud/webhookercatcher`  
+Campay webhook (API): `https://tssc.cloud/api/donations/campay/webhook`  
 Stripe webhook: `https://tssc.cloud/api/donations/stripe/webhook` (`checkout.session.completed`)

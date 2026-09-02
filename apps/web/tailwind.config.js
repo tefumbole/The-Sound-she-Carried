@@ -5,13 +5,18 @@ export default {
     extend: {
       colors: {
         crimson: '#8B1538',
-        chrome: '#c5c8ce',
-        ink: '#0b0b0d',
+        chrome: '#C9D0D8',
+        ink: '#050A18',
+        navy: '#050A18',
+        navyMid: '#0B1A33',
         gold: '#D4AF37',
+        goldSoft: '#E8C872',
+        bronze: '#9A7B1C',
         cyan: '#00E5FF',
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'serif'],
+        display: ['Cinzel', 'serif'],
+        serif: ['"Playfair Display"', 'serif'],
         sans: ['"Source Sans 3"', 'system-ui', 'sans-serif'],
       },
     },

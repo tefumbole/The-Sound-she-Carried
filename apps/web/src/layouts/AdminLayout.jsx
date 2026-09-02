@@ -7,6 +7,7 @@ const groups = [
     items: [
       { to: '/admin', label: 'Dashboard', end: true, perm: 'campaign.view' },
       { to: '/admin/donations', label: 'Donations', perm: 'donations.view' },
+      { to: '/admin/bookings', label: 'Bookings', perm: 'bookings.view' },
       { to: '/admin/settings', label: 'Settings', perm: 'campaign.edit' },
     ],
   },

@@ -34,17 +34,24 @@ async function markSuccessful(pool, donation) {
 
 router.get('/holder', async (req, res) => {
   try {
-    const name = await getHolderName(req.query.phone);
+    const phone = toE164CM(req.query.phone);
+    if (!phone) return res.json({ name: null, error: 'Invalid phone number.' });
+    const name = await getHolderName(phone);
     res.json({ name: name && !looksLikePhone(name) ? name : null });
   } catch (err) {
     console.warn('Holder lookup failed:', err.message);
-    res.json({ name: null });
+    res.json({ name: null, error: err.message });
   }
 });
 
 router.post('/initiate', async (req, res) => {
   const amount = Math.round(Number(req.body.amount || 0));
   const method = String(req.body.method || 'momo');
+  const kind = String(req.body.kind || 'gift') === 'gold_sponsor' ? 'gold_sponsor' : 'gift';
+  const goldTiers = [100000, 200000, 300000, 500000];
+  if (kind === 'gold_sponsor' && !goldTiers.includes(amount)) {
+    return res.status(400).json({ error: 'Choose a Gold Sponsor amount.' });
+  }
   if (!Number.isFinite(amount) || amount < 100) {
     return res.status(400).json({ error: 'Minimum donation is 100 F CFA.' });
   }
@@ -78,13 +85,14 @@ router.post('/initiate', async (req, res) => {
       holderName: holderName || 'Card donor',
       successUrl: `${appUrl}/donate/return?id=${id}&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl}/donate/return?id=${id}&failed=1`,
+      productName: kind === 'gold_sponsor' ? 'Gold Sponsor — The Sound She Carries' : 'The Sound She Carries donation',
     });
     if (!checkout.success) return res.status(400).json({ error: checkout.message });
 
     await pool.query(
-      `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, campay_link)
-       VALUES (?, ?, 'card', ?, ?, ?, 'pending', ?, ?)`,
-      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, checkout.sessionId, checkout.url]
+      `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, campay_link, kind)
+       VALUES (?, ?, 'card', ?, ?, ?, 'pending', ?, ?, ?)`,
+      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, checkout.sessionId, checkout.url, kind]
     );
     return res.json({ id, status: 'pending', checkout_url: checkout.url });
   }
@@ -92,15 +100,15 @@ router.post('/initiate', async (req, res) => {
   const collect = await collectPayment({
     amount,
     phone: momoPhone,
-    description: 'The Sound She Carries donation',
+    description: kind === 'gold_sponsor' ? 'Gold Sponsor — The Sound She Carries' : 'The Sound She Carries donation',
     externalReference: id,
   });
   if (!collect.success) return res.status(400).json({ error: collect.message });
 
   await pool.query(
-    `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)`,
-    [id, amount, method, momoPhone, holderName || null, whatsapp, collect.reference]
+    `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, kind)
+     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+    [id, amount, method, momoPhone, holderName || null, whatsapp, collect.reference, kind]
   );
 
   res.json({
@@ -142,28 +150,36 @@ router.get('/:id/status', async (req, res) => {
   res.json({ id: donation.id, status: donation.status, amount: donation.amount, method: donation.method });
 });
 
+export async function handleCampayWebhookPayload(payload, headers = {}) {
+  const valid = validateCampayJwt(payload || {}, headers);
+  const reference = payload?.reference || payload?.external_reference;
+  const providerStatus = String(payload?.status || '').toUpperCase();
+  let donation = null;
+
+  if (valid && reference) {
+    const pool = getPool();
+    const [rows] = await pool.query(
+      'SELECT * FROM donations WHERE campay_ref = ? OR id = ? LIMIT 1',
+      [reference, payload?.external_reference || '']
+    );
+    donation = rows[0] || null;
+    if (donation) {
+      if (['SUCCESSFUL', 'SUCCESS', 'COMPLETED'].includes(providerStatus)) {
+        donation = await markSuccessful(pool, donation);
+      } else if (['FAILED', 'REJECTED', 'EXPIRED'].includes(providerStatus)) {
+        await pool.query('UPDATE donations SET status = ? WHERE id = ? AND status = ?', ['failed', donation.id, 'pending']);
+        donation = { ...donation, status: 'failed' };
+      }
+    }
+  }
+
+  return { valid, donation, reference, providerStatus };
+}
+
 router.post('/campay/webhook', async (req, res) => {
-  if (!validateCampayJwt(req.body || {}, req.headers)) {
-    return res.status(401).json({ status: 'unauthorized' });
-  }
-  const reference = req.body?.reference || req.body?.external_reference;
-  const providerStatus = String(req.body?.status || '').toUpperCase();
-  if (!reference) return res.json({ ok: true });
-
-  const pool = getPool();
-  const [rows] = await pool.query(
-    'SELECT * FROM donations WHERE campay_ref = ? OR id = ? LIMIT 1',
-    [reference, req.body?.external_reference || '']
-  );
-  const donation = rows[0];
-  if (!donation) return res.json({ ok: true });
-
-  if (['SUCCESSFUL', 'SUCCESS', 'COMPLETED'].includes(providerStatus)) {
-    await markSuccessful(pool, donation);
-  } else if (['FAILED', 'REJECTED', 'EXPIRED'].includes(providerStatus)) {
-    await pool.query('UPDATE donations SET status = ? WHERE id = ? AND status = ?', ['failed', donation.id, 'pending']);
-  }
-  res.json({ ok: true });
+  const result = await handleCampayWebhookPayload(req.body || {}, req.headers);
+  if (!result.valid) return res.status(401).json({ status: 'unauthorized' });
+  res.json({ ok: true, donation_id: result.donation?.id || null });
 });
 
 export async function settleStripeDonation(session) {

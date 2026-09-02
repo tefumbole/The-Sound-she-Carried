@@ -28,7 +28,7 @@ export default function DonatePendingPage() {
   }, [id, params]);
 
   return (
-    <div className="min-h-screen bg-ink flex items-center justify-center p-6">
+    <div className="min-h-dvh bg-navy flex items-center justify-center p-6">
       <div className="glass max-w-md w-full rounded-3xl p-8 text-center">
         {status === 'successful' ? (
           <>

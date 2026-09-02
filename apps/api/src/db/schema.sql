@@ -70,8 +70,10 @@ CREATE TABLE IF NOT EXISTS donations (
   notified_at DATETIME DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  kind VARCHAR(40) NOT NULL DEFAULT 'gift',
   INDEX idx_donations_status (status),
-  INDEX idx_donations_ref (campay_ref)
+  INDEX idx_donations_ref (campay_ref),
+  INDEX idx_donations_kind (kind)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tasks (
@@ -273,4 +275,50 @@ CREATE TABLE IF NOT EXISTS whatsapp_logs (
   status VARCHAR(40) DEFAULT 'pending',
   error_message TEXT DEFAULT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS bookings (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  phone VARCHAR(50) NOT NULL,
+  holder_name VARCHAR(255) DEFAULT NULL,
+  event_name VARCHAR(255) NOT NULL,
+  event_date DATE NOT NULL,
+  event_time TIME NOT NULL,
+  description TEXT DEFAULT NULL,
+  id_type VARCHAR(20) DEFAULT 'id',
+  id_document_path TEXT DEFAULT NULL,
+  id_extracted_json JSON DEFAULT NULL,
+  signature_path TEXT DEFAULT NULL,
+  otp_verified_at DATETIME DEFAULT NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'pending',
+  reject_reason TEXT DEFAULT NULL,
+  review_token CHAR(36) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_bookings_review (review_token),
+  INDEX idx_bookings_date (event_date),
+  INDEX idx_bookings_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS booking_otps (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  phone VARCHAR(50) NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  used_at DATETIME DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_booking_otps_phone (phone)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS webhook_catches (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  source VARCHAR(40) DEFAULT 'campay',
+  method VARCHAR(10) DEFAULT 'POST',
+  path VARCHAR(255) DEFAULT NULL,
+  headers_json JSON DEFAULT NULL,
+  body_json JSON DEFAULT NULL,
+  valid_secret TINYINT(1) DEFAULT 0,
+  donation_id CHAR(36) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_webhook_catches_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

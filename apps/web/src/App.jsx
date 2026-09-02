@@ -2,6 +2,9 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AdminLayout from './layouts/AdminLayout';
 import LandingPage from './pages/LandingPage';
+import BookingPage from './pages/BookingPage';
+import BookingReviewPage from './pages/BookingReviewPage';
+import BookingsPage from './pages/admin/BookingsPage';
 import DonatePendingPage from './pages/DonatePendingPage';
 import DonateReturnPage from './pages/DonateReturnPage';
 import TaskInvitePage from './pages/TaskInvitePage';
@@ -33,6 +36,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
+      <Route path="/book" element={<BookingPage />} />
+      <Route path="/booking/review/:token" element={<BookingReviewPage />} />
       <Route path="/donate/pending/:id" element={<DonatePendingPage />} />
       <Route path="/donate/return" element={<DonateReturnPage />} />
       <Route path="/tasks/invite/:token" element={<TaskInvitePage />} />
@@ -40,6 +45,7 @@ export default function App() {
       <Route path="/admin" element={<Guard><AdminLayout /></Guard>}>
         <Route index element={<DashboardPage />} />
         <Route path="donations" element={<DonationsPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
         <Route path="settings" element={<CampaignSettingsPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="users/new" element={<UserFormPage />} />

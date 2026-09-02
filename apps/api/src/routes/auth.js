@@ -34,8 +34,12 @@ router.post('/login', async (req, res) => {
 
   const pool = getPool();
   const [rows] = await pool.query(
-    `SELECT * FROM users WHERE status = 'active' AND LOWER(email) = LOWER(?) LIMIT 1`,
-    [identifier]
+    `SELECT * FROM users WHERE status = 'active' AND (
+       LOWER(email) = LOWER(?)
+       OR LOWER(SUBSTRING_INDEX(email, '@', 1)) = LOWER(?)
+       OR REPLACE(phone, '+', '') = REPLACE(?, '+', '')
+     ) LIMIT 1`,
+    [identifier, identifier, identifier]
   );
   const user = rows[0];
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {

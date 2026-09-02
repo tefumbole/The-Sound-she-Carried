@@ -11,7 +11,7 @@ export function isStripeConfigured() {
   return Boolean(key && key.startsWith('sk_'));
 }
 
-export async function createDonationCheckout({ donationId, amount, holderName, successUrl, cancelUrl }) {
+export async function createDonationCheckout({ donationId, amount, holderName, successUrl, cancelUrl, productName }) {
   const stripe = getStripe();
   if (!stripe) {
     return { success: false, message: 'Card payment is not configured.' };
@@ -26,7 +26,7 @@ export async function createDonationCheckout({ donationId, amount, holderName, s
         currency: 'xaf',
         unit_amount: Math.round(Number(amount)),
         product_data: {
-          name: 'The Sound She Carries donation',
+          name: productName || 'The Sound She Carries donation',
           description: holderName ? `Gift from ${holderName}` : 'Live Recording · Lian Ministrel',
         },
       },

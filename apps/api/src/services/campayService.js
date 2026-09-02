@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto';
-import { cameroonLocalDigits, toE164CM } from '../utils/phone.js';
+import { toCampayMsisdn, toE164CM } from '../utils/phone.js';
 
 function baseUrl() {
   return String(process.env.CAMPAY_BASE_URL || 'https://www.campay.net/api').replace(/\/$/, '');
@@ -26,29 +26,39 @@ async function request(method, url, payload, token) {
   return { http: res.status, body };
 }
 
-export async function campayToken() {
-  if (process.env.CAMPAY_TOKEN) return process.env.CAMPAY_TOKEN;
+async function passwordToken() {
   const username = process.env.CAMPAY_USERNAME || process.env.CAMPAY_APP_USERNAME;
   const password = process.env.CAMPAY_PASSWORD || process.env.CAMPAY_APP_PASSWORD;
   if (!username || !password) return '';
-
   const { body } = await request('POST', `${baseUrl()}/token/`, { username, password });
   return body?.token || '';
 }
 
+export async function campayToken() {
+  if (process.env.CAMPAY_TOKEN) return process.env.CAMPAY_TOKEN;
+  return passwordToken();
+}
+
+async function authorizedRequest(method, url, payload, retried = false) {
+  const token = retried ? (await passwordToken()) : (await campayToken());
+  if (!token) return { http: 0, body: { message: 'Campay is not configured.' } };
+  const result = await request(method, url, payload, token);
+  if (!retried && (result.http === 401 || result.http === 403)) {
+    return authorizedRequest(method, url, payload, true);
+  }
+  return result;
+}
+
 export async function getHolderName(phone) {
   if (simulate()) return 'Test Donor';
-  const token = await campayToken();
-  if (!token) return null;
-  const digits = cameroonLocalDigits(phone);
-  if (digits.length < 8) return null;
-  const { body } = await request(
+  const msisdn = toCampayMsisdn(phone);
+  if (!msisdn) return null;
+  const { body } = await authorizedRequest(
     'GET',
-    `${baseUrl()}/holder_info/?phone_number=${encodeURIComponent(digits)}`,
-    null,
-    token
+    `${baseUrl()}/holder_info/?phone_number=${encodeURIComponent(msisdn)}`,
+    null
   );
-  const name = String(body?.full_name || '').trim();
+  const name = String(body?.full_name || body?.name || body?.holder_name || '').trim();
   return name || null;
 }
 
@@ -62,13 +72,12 @@ export async function collectPayment({ amount, phone, description, externalRefer
     };
   }
 
-  const token = await campayToken();
-  if (!token) {
-    return { success: false, message: 'Mobile Money is temporarily unavailable.' };
+  const from = toCampayMsisdn(phone);
+  if (!from) {
+    return { success: false, message: 'Enter a valid Cameroon MoMo number.' };
   }
 
-  const from = cameroonLocalDigits(phone);
-  const { http, body } = await request(
+  const { http, body } = await authorizedRequest(
     'POST',
     `${baseUrl()}/collect/`,
     {
@@ -77,8 +86,7 @@ export async function collectPayment({ amount, phone, description, externalRefer
       description: description || 'The Sound She Carries donation',
       external_reference: String(externalReference),
       currency: 'XAF',
-    },
-    token
+    }
   );
 
   if (body?.reference) {
@@ -102,22 +110,18 @@ export async function getPaymentLink({ amount, phone, externalReference, redirec
   if (simulate()) {
     return { success: true, link: `${redirectUrl}?simulated=1` };
   }
-  const token = await campayToken();
-  if (!token) return { success: false, message: 'Card payment is temporarily unavailable.' };
-
-  const { body } = await request(
+  const { body } = await authorizedRequest(
     'POST',
     `${baseUrl()}/get_payment_link/`,
     {
       amount: String(Math.round(Number(amount))),
-      from: cameroonLocalDigits(phone) || '670706435',
+      from: toCampayMsisdn(phone) || '237670706435',
       currency: 'XAF',
       external_reference: String(externalReference),
       redirect_url: redirectUrl,
       failure_redirect_url: failureUrl || redirectUrl,
       payment_options: 'CARD',
-    },
-    token
+    }
   );
 
   if (body?.link) return { success: true, link: body.link, reference: body.reference || null };
@@ -128,14 +132,10 @@ export async function getTransactionStatus(reference) {
   if (simulate() && String(reference).startsWith('SIM-')) {
     return { status: 'SUCCESSFUL', providerStatus: 'SUCCESSFUL' };
   }
-  const token = await campayToken();
-  if (!token) return { status: 'PENDING', providerStatus: 'UNKNOWN' };
-
-  const { body } = await request(
+  const { body } = await authorizedRequest(
     'GET',
     `${baseUrl()}/transaction/${encodeURIComponent(reference)}/`,
-    null,
-    token
+    null
   );
   const providerStatus = String(body?.status || 'PENDING').toUpperCase();
   let status = 'PENDING';

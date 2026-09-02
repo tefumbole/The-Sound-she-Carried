@@ -12,12 +12,14 @@ import { constructWebhookEvent, isStripeConfigured } from './services/stripeServ
 import authRoutes from './routes/auth.js';
 import campaignRoutes from './routes/campaign.js';
 import donationsRoutes, { settleStripeDonation } from './routes/donations.js';
+import webhookCatcherRoutes from './routes/webhookCatcher.js';
 import usersRoutes from './routes/users.js';
 import rolesRoutes from './routes/roles.js';
 import tasksRoutes, { runProcessScheduled, runProcessReminders } from './routes/tasks.js';
 import announcementsRoutes, { processScheduledAnnouncements } from './routes/announcements.js';
 import lettersRoutes from './routes/letters.js';
 import whatsappRoutes from './routes/whatsapp.js';
+import bookingsRoutes from './routes/bookings.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -26,8 +28,18 @@ const uploadDir = path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '.
 fs.mkdirSync(uploadDir, { recursive: true });
 
 app.set('trust proxy', true);
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
+}));
+const corsOrigins = String(process.env.CORS_ORIGIN || '*')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+app.use(cors({
+  origin: corsOrigins.includes('*') ? '*' : corsOrigins,
+  credentials: true,
+}));
 app.use(morgan('combined'));
 app.post('/donations/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
@@ -58,12 +70,15 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRoutes);
 app.use('/campaign', campaignRoutes);
 app.use('/donations', donationsRoutes);
+app.use('/campay/webhook', webhookCatcherRoutes);
+app.use('/webhookercatcher', webhookCatcherRoutes);
 app.use('/users', usersRoutes);
 app.use('/roles', rolesRoutes);
 app.use('/tasks', tasksRoutes);
 app.use('/announcements', announcementsRoutes);
 app.use('/letters', lettersRoutes);
 app.use('/whatsapp', whatsappRoutes);
+app.use('/bookings', bookingsRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);
