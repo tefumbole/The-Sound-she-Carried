@@ -8,9 +8,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import { checkDatabaseConnection } from './db/pool.js';
 import { isWasenderConfigured } from './services/wasenderWhatsAppService.js';
+import { constructWebhookEvent, isStripeConfigured } from './services/stripeService.js';
 import authRoutes from './routes/auth.js';
 import campaignRoutes from './routes/campaign.js';
-import donationsRoutes from './routes/donations.js';
+import donationsRoutes, { settleStripeDonation } from './routes/donations.js';
 import usersRoutes from './routes/users.js';
 import rolesRoutes from './routes/roles.js';
 import tasksRoutes, { runProcessScheduled, runProcessReminders } from './routes/tasks.js';
@@ -28,6 +29,18 @@ app.set('trust proxy', true);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*', credentials: true }));
 app.use(morgan('combined'));
+app.post('/donations/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const event = constructWebhookEvent(req.body, req.headers['stripe-signature']);
+    if (event.type === 'checkout.session.completed') {
+      await settleStripeDonation(event.data.object);
+    }
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Stripe webhook error:', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(uploadDir));
@@ -38,6 +51,7 @@ app.get('/health', (_req, res) => {
     service: 'tssc-api',
     wasender: isWasenderConfigured(),
     campay: Boolean(process.env.CAMPAY_TOKEN || process.env.CAMPAY_USERNAME),
+    stripe: isStripeConfigured(),
   });
 });
 

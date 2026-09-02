@@ -7,6 +7,8 @@ export default {
         crimson: '#8B1538',
         chrome: '#c5c8ce',
         ink: '#0b0b0d',
+        gold: '#D4AF37',
+        cyan: '#00E5FF',
       },
       fontFamily: {
         display: ['"Playfair Display"', 'serif'],

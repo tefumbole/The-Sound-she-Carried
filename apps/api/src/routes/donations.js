@@ -5,10 +5,10 @@ import { requireAuth, requirePermission } from '../middleware/auth.js';
 import {
   getHolderName,
   collectPayment,
-  getPaymentLink,
   getTransactionStatus,
   validateCampayJwt,
 } from '../services/campayService.js';
+import { createDonationCheckout, getCheckoutStatus } from '../services/stripeService.js';
 import { notifyDonationSuccess } from '../services/donationNotify.js';
 import { toE164CM, looksLikePhone } from '../utils/phone.js';
 
@@ -66,27 +66,27 @@ router.post('/initiate', async (req, res) => {
     }
   }
 
-  const whatsapp = toE164CM(req.body.whatsapp_phone || req.body.phone) || momoPhone;
+  const whatsapp = toE164CM(req.body.whatsapp_phone || (method === 'card' ? '' : req.body.phone)) || momoPhone;
   const id = randomUUID();
   const pool = getPool();
   const appUrl = String(process.env.APP_URL || '').replace(/\/$/, '');
 
   if (method === 'card') {
-    const link = await getPaymentLink({
+    const checkout = await createDonationCheckout({
+      donationId: id,
       amount,
-      phone: req.body.phone || '670706435',
-      externalReference: id,
-      redirectUrl: `${appUrl}/donate/return?id=${id}`,
-      failureUrl: `${appUrl}/donate/return?id=${id}&failed=1`,
+      holderName: holderName || 'Card donor',
+      successUrl: `${appUrl}/donate/return?id=${id}&session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${appUrl}/donate/return?id=${id}&failed=1`,
     });
-    if (!link.success) return res.status(400).json({ error: link.message });
+    if (!checkout.success) return res.status(400).json({ error: checkout.message });
 
     await pool.query(
       `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, campay_link)
        VALUES (?, ?, 'card', ?, ?, ?, 'pending', ?, ?)`,
-      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, link.reference || null, link.link]
+      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, checkout.sessionId, checkout.url]
     );
-    return res.json({ id, status: 'pending', checkout_url: link.link });
+    return res.json({ id, status: 'pending', checkout_url: checkout.url });
   }
 
   const collect = await collectPayment({
@@ -118,8 +118,15 @@ router.get('/:id/status', async (req, res) => {
   if (!donation) return res.status(404).json({ error: 'Donation not found' });
 
   if (donation.status === 'pending' && donation.campay_ref) {
-    const result = await getTransactionStatus(donation.campay_ref);
+    const sessionId = req.query.session_id || donation.campay_ref;
+    const result = donation.method === 'card'
+      ? await getCheckoutStatus(sessionId)
+      : await getTransactionStatus(donation.campay_ref);
     if (result.status === 'SUCCESSFUL') {
+      if (result.holderName && !donation.holder_name) {
+        await pool.query('UPDATE donations SET holder_name = ? WHERE id = ?', [result.holderName, donation.id]);
+        donation.holder_name = result.holderName;
+      }
       const fresh = await markSuccessful(pool, donation);
       return res.json({ id: fresh.id, status: fresh.status, amount: fresh.amount });
     }
@@ -158,6 +165,20 @@ router.post('/campay/webhook', async (req, res) => {
   }
   res.json({ ok: true });
 });
+
+export async function settleStripeDonation(session) {
+  const donationId = session?.metadata?.donation_id;
+  if (!donationId) return null;
+  const pool = getPool();
+  const [[donation]] = await pool.query('SELECT * FROM donations WHERE id = ?', [donationId]);
+  if (!donation) return null;
+  const name = session.customer_details?.name || donation.holder_name;
+  if (name) {
+    await pool.query('UPDATE donations SET holder_name = ? WHERE id = ?', [name, donation.id]);
+    donation.holder_name = name;
+  }
+  return markSuccessful(pool, donation);
+}
 
 router.get('/', requireAuth, requirePermission('donations.view'), async (_req, res) => {
   const pool = getPool();

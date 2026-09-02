@@ -12,8 +12,9 @@ body { background: #0b0b0d; }
 }
 
 .btn-donate {
-  background: linear-gradient(180deg, #b31f4d 0%, #8B1538 100%);
-  box-shadow: 0 8px 24px rgba(139, 21, 56, 0.45);
+  background: linear-gradient(180deg, #f0d78c 0%, #d4af37 55%, #9a7b1c 100%);
+  color: #1a1408;
+  box-shadow: 0 8px 24px rgba(212, 175, 55, 0.35);
 }
 
 .chrome-text {

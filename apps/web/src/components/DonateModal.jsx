@@ -98,7 +98,18 @@ export default function DonateModal({ open, onClose }) {
           ))}
         </div>
 
-        {method !== 'card' && (
+        {method === 'card' ? (
+          <>
+            <label className="block text-sm mb-1">Name on card / donor name</label>
+            <input
+              value={holder}
+              onChange={(e) => setHolder(e.target.value)}
+              placeholder="Your name"
+              className="w-full mb-3 rounded-xl bg-white text-ink px-3 py-2"
+            />
+            <p className="text-xs text-chrome mb-3">You will complete Visa payment securely on Stripe. Stay on the page until you return here.</p>
+          </>
+        ) : (
           <>
             <label className="block text-sm mb-1">MoMo number</label>
             <div className="flex gap-2 mb-1">

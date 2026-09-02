@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { api, money } from '../lib/api';
 
 export default function DonatePendingPage() {
   const { id } = useParams();
+  const [params] = useSearchParams();
   const [status, setStatus] = useState('pending');
   const [amount, setAmount] = useState(null);
 
@@ -11,7 +12,9 @@ export default function DonatePendingPage() {
     let stop = false;
     async function poll() {
       try {
-        const data = await api(`/donations/${id}/status`);
+        const session = params.get('session_id');
+        const q = session ? `?session_id=${encodeURIComponent(session)}` : '';
+        const data = await api(`/donations/${id}/status${q}`);
         if (stop) return;
         setStatus(data.status);
         setAmount(data.amount);
@@ -22,7 +25,7 @@ export default function DonatePendingPage() {
     }
     poll();
     return () => { stop = true; };
-  }, [id]);
+  }, [id, params]);
 
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-6">

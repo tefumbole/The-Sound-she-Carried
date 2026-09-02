@@ -68,13 +68,14 @@ export default function LandingPage() {
       style={{ backgroundImage: "linear-gradient(180deg, rgba(10,10,12,.28), rgba(10,10,12,.55)), url('/poster.jpg')" }}
     >
       <header className="flex justify-between items-center px-5 py-4">
-        <p className="text-xs tracking-[0.35em] uppercase">TSSC Presents</p>
-        <Link to="/admin/login" className="text-xs text-chrome hover:text-white">Staff</Link>
+        <img src="/logo.jpg" alt="The Sound She Carries" className="h-12 md:h-14 w-auto rounded-md object-contain" />
+        <Link to="/admin/login" className="text-xs text-gold hover:text-white">Staff</Link>
       </header>
 
       <main className="max-w-xl mx-auto px-4 pb-16 pt-6">
         <div className="glass rounded-3xl p-6 md:p-8">
-          <p className="text-center text-xs tracking-[0.3em] uppercase text-chrome">The Prophetic Minstrel</p>
+          <img src="/logo.jpg" alt="TSSC" className="mx-auto h-28 md:h-36 w-auto object-contain drop-shadow-lg" />
+          <p className="text-center text-xs tracking-[0.3em] uppercase text-gold mt-4">The Prophetic Minstrel</p>
           <h1 className="font-display text-4xl md:text-5xl text-center leading-tight mt-2 chrome-text">
             The Sound She Carries
           </h1>
@@ -102,7 +103,7 @@ export default function LandingPage() {
             </div>
             <div className="h-3 rounded-full bg-white/15 overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#c5c8ce] to-crimson transition-all"
+                className="h-full rounded-full bg-gradient-to-r from-gold to-cyan transition-all"
                 style={{ width: `${percent}%` }}
               />
             </div>

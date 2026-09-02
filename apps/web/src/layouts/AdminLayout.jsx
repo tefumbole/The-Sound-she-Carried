@@ -54,7 +54,8 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen bg-[#111114] text-white flex">
       <aside className="w-64 shrink-0 bg-black/50 border-r border-white/10 p-4 hidden md:block">
-        <p className="text-[10px] tracking-[0.3em] uppercase text-chrome">TSSC Admin</p>
+        <img src="/logo.jpg" alt="TSSC" className="h-16 w-auto object-contain mb-2" />
+        <p className="text-[10px] tracking-[0.3em] uppercase text-gold">TSSC Admin</p>
         <p className="font-display text-xl mt-1">The Sound She Carries</p>
         {groups.map((g) => (
           <div key={g.label} className="mt-6">

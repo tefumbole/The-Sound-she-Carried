@@ -6,7 +6,11 @@ export default function DonateReturnPage() {
   const navigate = useNavigate();
   useEffect(() => {
     const id = params.get('id');
-    if (id) navigate(`/donate/pending/${id}`, { replace: true });
+    const sessionId = params.get('session_id');
+    if (id) {
+      navigate(`/donate/pending/${id}${sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : ''}`, { replace: true });
+      return;
+    }
     else navigate('/', { replace: true });
   }, [params, navigate]);
   return <p className="p-8 text-center">Returning…</p>;

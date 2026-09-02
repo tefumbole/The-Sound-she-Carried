@@ -23,7 +23,8 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-ink flex items-center justify-center p-6">
       <form onSubmit={submit} className="glass w-full max-w-sm rounded-3xl p-8">
-        <p className="text-xs tracking-[0.3em] uppercase text-chrome">Staff access</p>
+        <img src="/logo.jpg" alt="The Sound She Carries" className="h-24 mx-auto object-contain mb-4" />
+        <p className="text-xs tracking-[0.3em] uppercase text-gold">Staff access</p>
         <h1 className="font-display text-3xl mt-2">Sign in</h1>
         <input className="w-full mt-6 rounded-xl px-3 py-2 text-ink" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
         <input className="w-full mt-3 rounded-xl px-3 py-2 text-ink" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />

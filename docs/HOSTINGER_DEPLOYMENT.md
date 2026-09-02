@@ -70,4 +70,5 @@ CORS_ORIGIN=https://tssc.cloud
 APP_URL=https://tssc.cloud
 ```
 
-Campay webhook: `https://tssc.cloud/api/donations/campay/webhook`
+Campay webhook: `https://tssc.cloud/api/donations/campay/webhook`  
+Stripe webhook: `https://tssc.cloud/api/donations/stripe/webhook` (`checkout.session.completed`)
