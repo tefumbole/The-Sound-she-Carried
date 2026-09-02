@@ -3,7 +3,9 @@ dist
 .env
 apps/api/.env
 apps/web/.env
-uploads
-apps/api/uploads
+uploads/**
+!uploads/.gitkeep
+apps/api/uploads/**
+!apps/api/uploads/.gitkeep
 *.log
 .DS_Store

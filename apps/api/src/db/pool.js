@@ -14,6 +14,7 @@ export function getPool() {
       connectionLimit: 10,
       enableKeepAlive: true,
       multipleStatements: false,
+      timezone: '+01:00',
     });
   }
   return pool;
