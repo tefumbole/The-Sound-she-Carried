@@ -113,18 +113,22 @@ try {
         1300000,
         '2026-09-27 17:00:00',
         'Chariot Banquet Hall, Mile 18 Buea',
-        '+237697470711,+237670706435,+237675321739',
+        '+237697470711,+237675321739',
       ]
     );
     console.log('Seeded campaign settings');
   } else {
-    const phones = String(campaign[0].admin_phones || '');
-    if (!phones.includes('675321739')) {
-      await pool.query(
-        `UPDATE campaign_settings SET admin_phones = ? WHERE id = ?`,
-        [`${phones ? `${phones},` : ''}+237675321739`, campaign[0].id]
-      );
+    const phones = String(campaign[0].admin_phones || '')
+      .split(/[,;]+/)
+      .map((p) => p.trim())
+      .filter((p) => p && !p.replace(/\D/g, '').endsWith('670706435'));
+    if (!phones.some((p) => p.replace(/\D/g, '').endsWith('675321739'))) {
+      phones.push('+237675321739');
     }
+    await pool.query(
+      `UPDATE campaign_settings SET admin_phones = ? WHERE id = ?`,
+      [phones.join(','), campaign[0].id]
+    );
   }
 
   const [ann] = await pool.query('SELECT id FROM announcement_settings LIMIT 1');

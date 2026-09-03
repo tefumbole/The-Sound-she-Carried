@@ -33,12 +33,14 @@ export async function notifyBookingSubmitted(booking) {
     .filter(Boolean);
   const unique = [...new Set(phones)];
   const msg =
-    `*New booking request*\n\n` +
-    `${booking.holder_name || 'Guest'} (${booking.phone}) wants to book *The Prophetic Minstrel*.\n` +
-    `Event: *${booking.event_name}*\n` +
-    `When: *${booking.event_date}* at *${String(booking.event_time).slice(0, 5)}*\n` +
-    `${booking.description ? `Note: ${booking.description}\n` : ''}` +
-    `\nApprove or reject:\n${reviewUrl}`;
+    `*NEW BOOKING / NOUVELLE RÉSERVATION*\n` +
+    `━━━━━━━━━━━━━━━━\n\n` +
+    `👤 ${booking.holder_name || 'Guest'}\n` +
+    `📞 ${booking.phone}\n` +
+    `🎶 ${booking.event_name}\n` +
+    `🗓️ ${booking.event_date} · ${String(booking.event_time).slice(0, 5)}\n` +
+    `${booking.description ? `📝 ${booking.description}\n` : ''}` +
+    `\n${reviewUrl}`;
 
   for (const phone of unique) {
     const result = await sendTextMessage(phone, msg, 'booking_admin');
@@ -51,8 +53,8 @@ export async function notifyBookingDecision(booking) {
   if (!phone) return;
   const approved = booking.status === 'approved';
   const msg = approved
-    ? `Your booking of *The Prophetic Minstrel* for *${booking.event_name}* on *${booking.event_date}* was *approved*.\n\n_TSSC_`
-    : `Your booking of *The Prophetic Minstrel* for *${booking.event_name}* on *${booking.event_date}* was *not approved*.\nReason: ${booking.reject_reason || 'Not specified'}\n\n_TSSC_`;
+    ? `*APPROVED / APPROUVÉ*\n━━━━━━━━━━━━━━━━\n\n🎉 ${booking.event_name}\n🗓️ ${booking.event_date}`
+    : `*NOT APPROVED / REFUSÉ*\n━━━━━━━━━━━━━━━━\n\n⚠️ ${booking.event_name}\n🗓️ ${booking.event_date}\n📝 ${booking.reject_reason || '—'}`;
   const result = await sendTextMessage(phone, msg, 'booking_decision');
   await logWa(phone, 'booking_decision', msg, result.success ? 'sent' : 'failed', result.error);
 }

@@ -74,7 +74,16 @@ router.post('/initiate', async (req, res) => {
     }
   }
 
-  const whatsapp = toE164CM(req.body.whatsapp_phone || (method === 'card' ? '' : req.body.phone)) || momoPhone;
+  const email = String(req.body.email || '').trim();
+  if (method === 'card' && !holderName) {
+    return res.status(400).json({ error: 'Enter the name on the card.' });
+  }
+  if (method === 'card' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Enter a valid email for the Visa receipt.' });
+  }
+
+  const cardPhone = method === 'card' ? toE164CM(req.body.phone) : null;
+  const whatsapp = toE164CM(req.body.whatsapp_phone || req.body.phone) || momoPhone || cardPhone;
   const id = randomUUID();
   const pool = getPool();
   const appUrl = String(process.env.APP_URL || '').replace(/\/$/, '');
@@ -83,7 +92,9 @@ router.post('/initiate', async (req, res) => {
     const checkout = await createDonationCheckout({
       donationId: id,
       amount,
-      holderName: holderName || 'Card donor',
+      holderName,
+      email,
+      phone: cardPhone || '',
       successUrl: `${appUrl}/donate/return?id=${id}&session_id={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${appUrl}/donate/return?id=${id}&failed=1`,
       productName: kind === 'gold_sponsor' ? 'Gold Sponsor — The Sound She Carries' : 'The Sound She Carries donation',

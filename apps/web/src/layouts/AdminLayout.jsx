@@ -89,10 +89,10 @@ export default function AdminLayout() {
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="flex justify-between items-center px-4 md:px-5 py-3 border-b border-white/10">
-          <div className="flex items-center gap-3">
+        <header className="flex justify-between items-center gap-2 px-3 md:px-5 py-3 border-b border-white/10 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <div className="flex items-center gap-2 min-w-0">
             <select
-              className="md:hidden rounded-lg bg-black/40 border border-white/15 px-2 py-1 text-sm"
+              className="md:hidden rounded-lg bg-black/40 border border-white/15 px-2 min-h-10 text-sm max-w-[9.5rem]"
               value={active?.label || ''}
               onChange={(e) => {
                 const g = visibleGroups.find((x) => x.label === e.target.value);
@@ -101,11 +101,11 @@ export default function AdminLayout() {
             >
               {visibleGroups.map((g) => <option key={g.label} value={g.label}>{g.label}</option>)}
             </select>
-            <a href="/" className="text-sm text-chrome">View site</a>
+            <a href="/" className="text-sm text-chrome whitespace-nowrap">View site</a>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span>{user?.name}</span>
-            <button onClick={() => { logout(); navigate('/admin/login'); }} className="text-chrome">Logout</button>
+          <div className="flex items-center gap-2 text-sm shrink-0">
+            <span className="hidden sm:inline truncate max-w-[8rem]">{user?.name}</span>
+            <button onClick={() => { logout(); navigate('/admin/login'); }} className="min-h-10 px-2 text-chrome">Logout</button>
           </div>
         </header>
 
@@ -130,7 +130,7 @@ export default function AdminLayout() {
           </div>
         )}
 
-        <main className="p-5 md:p-8 flex-1"><Outlet /></main>
+        <main className="p-3 sm:p-5 md:p-8 flex-1 pb-[max(1.25rem,env(safe-area-inset-bottom))]"><Outlet /></main>
       </div>
     </div>
   );

@@ -25,8 +25,8 @@ export default function TaskInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-ink flex items-center justify-center p-6">
-      <div className="glass max-w-lg w-full rounded-3xl p-8">
+    <div className="min-h-dvh bg-ink flex items-center justify-center p-4 sm:p-6 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="glass max-w-lg w-full rounded-3xl p-5 sm:p-8">
         {error && <p className="text-red-300">{error}</p>}
         {!task && !error && <p>Loading…</p>}
         {task && (

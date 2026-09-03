@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function SignaturePad({ onChange }) {
+export default function SignaturePad({ onChange, clearLabel }) {
   const canvasRef = useRef(null);
   const drawing = useRef(false);
 
@@ -10,7 +10,7 @@ export default function SignaturePad({ onChange }) {
     const resize = () => {
       const ratio = window.devicePixelRatio || 1;
       const width = canvas.clientWidth;
-      const height = 110;
+      const height = Math.max(140, canvas.clientHeight || 140);
       canvas.width = width * ratio;
       canvas.height = height * ratio;
       const ctx = canvas.getContext('2d');
@@ -73,7 +73,7 @@ export default function SignaturePad({ onChange }) {
     <div>
       <canvas
         ref={canvasRef}
-        className="w-full h-28 rounded-xl bg-white touch-none"
+        className="w-full h-36 sm:h-40 rounded-xl bg-white touch-none ring-1 ring-gold/25"
         onMouseDown={start}
         onMouseMove={move}
         onMouseUp={end}
@@ -82,7 +82,7 @@ export default function SignaturePad({ onChange }) {
         onTouchMove={move}
         onTouchEnd={end}
       />
-      <button type="button" onClick={clear} className="text-xs text-gold mt-2">Clear signature</button>
+      <button type="button" onClick={clear} className="text-xs text-gold mt-2">{clearLabel || 'Clear'}</button>
     </div>
   );
 }

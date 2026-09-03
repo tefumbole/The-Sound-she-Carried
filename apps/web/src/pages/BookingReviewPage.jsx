@@ -30,8 +30,8 @@ export default function BookingReviewPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-navy text-white p-5">
-      <div className="max-w-lg mx-auto glass-navy rounded-3xl p-6">
+    <div className="min-h-dvh bg-navy text-white p-4 sm:p-5 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-lg mx-auto glass-navy rounded-3xl p-5 sm:p-6">
         <p className="text-[10px] tracking-[0.25em] uppercase text-gold">Booking request</p>
         <h1 className="font-display text-3xl gold-text mt-1">The Prophetic Minstrel</h1>
         {error && <p className="text-red-300 mt-3">{error}</p>}

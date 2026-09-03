@@ -13,22 +13,39 @@ async function logWa(phone, type, content, status, error) {
   );
 }
 
+function prettyPhone(input) {
+  const e164 = formatPhoneNumber(input) || String(input || '').trim();
+  const digits = e164.replace(/\D/g, '');
+  if (digits.startsWith('237') && digits.length === 12) {
+    return `+237 ${digits.slice(3, 6)} ${digits.slice(6, 9)} ${digits.slice(9)}`;
+  }
+  return e164 || '—';
+}
+
+function donorPhone(donation) {
+  return donation.momo_phone || donation.whatsapp_phone || '';
+}
+
+function underline(title) {
+  return `*${title}*\n━━━━━━━━━━━━━━━━`;
+}
+
 export async function notifyDonationSuccess(donation) {
   const snap = await getCampaignSnapshot();
   if (!snap.settings) return;
 
   const name = donation.holder_name || 'Friend';
   const methodLabel = donation.method === 'card' ? 'Visa' : 'MoMo / OM';
-  const kindLabel = donation.kind === 'gold_sponsor' ? 'Gold Sponsor gift' : 'donation';
+  const kind = donation.kind === 'gold_sponsor' ? 'Gold Sponsor' : 'Gift';
+  const phoneDisplay = prettyPhone(donorPhone(donation));
 
   if (Number(snap.settings.notify_donor) === 1 && donation.whatsapp_phone) {
     const donorMsg =
-      `Thank you, *${name}*, for your ${kindLabel} to *The Sound She Carries*.\n\n` +
-      `Your gift: *${formatXaf(donation.amount)}*\n` +
-      `Raised so far: *${formatXaf(snap.raised)}* of *${formatXaf(snap.target)}*\n` +
-      `Still pending: *${formatXaf(snap.pending)}*\n\n` +
-      `Live Recording · 27 Sept · 5 PM · Chariot Banquet Hall, Mile 18 Buea\n` +
-      `_TSSC · The Prophetic Minstrel_`;
+      `${underline('THANK YOU / MERCI')}\n\n` +
+      `🙏 ${name}\n` +
+      `💵 ${formatXaf(donation.amount)}\n` +
+      `✨ The Sound She Carries\n\n` +
+      `📊 ${formatXaf(snap.raised)} / ${formatXaf(snap.target)} (${snap.percent}%)`;
     const result = await sendTextMessage(donation.whatsapp_phone, donorMsg, 'donation_donor');
     await logWa(donation.whatsapp_phone, 'donation_donor', donorMsg, result.success ? 'sent' : 'failed', result.error);
   }
@@ -37,10 +54,14 @@ export async function notifyDonationSuccess(donation) {
     const phones = String(snap.settings.admin_phones || '')
       .split(/[,;]+/)
       .map((p) => formatPhoneNumber(p.trim()))
-      .filter(Boolean);
+      .filter((p) => p && !String(p).replace(/\D/g, '').endsWith('670706435'));
     const adminMsg =
-      `*${name}* has donated *${formatXaf(donation.amount)}* via ${methodLabel} ` +
-      `to *The Sound She Carries*.\n\nRaised: ${formatXaf(snap.raised)} / ${formatXaf(snap.target)} (${snap.percent}%)`;
+      `${underline('NEW DONATION / NOUVEAU DON')}\n\n` +
+      `👤 ${name}\n` +
+      `📞 ${phoneDisplay}\n` +
+      `💵 ${formatXaf(donation.amount)} · ${methodLabel}\n` +
+      `🏷️ ${kind}\n\n` +
+      `📊 ${formatXaf(snap.raised)} / ${formatXaf(snap.target)} (${snap.percent}%)`;
     for (const phone of phones) {
       const result = await sendTextMessage(phone, adminMsg, 'donation_admin');
       await logWa(phone, 'donation_admin', adminMsg, result.success ? 'sent' : 'failed', result.error);

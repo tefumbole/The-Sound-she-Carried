@@ -11,7 +11,9 @@ export function isStripeConfigured() {
   return Boolean(key && key.startsWith('sk_'));
 }
 
-export async function createDonationCheckout({ donationId, amount, holderName, successUrl, cancelUrl, productName }) {
+export async function createDonationCheckout({
+  donationId, amount, holderName, email, phone, successUrl, cancelUrl, productName,
+}) {
   const stripe = getStripe();
   if (!stripe) {
     return { success: false, message: 'Card payment is not configured.' };
@@ -20,6 +22,14 @@ export async function createDonationCheckout({ donationId, amount, holderName, s
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
+    customer_email: email || undefined,
+    billing_address_collection: 'required',
+    phone_number_collection: { enabled: true },
+    custom_text: {
+      submit: {
+        message: 'Card number, expiry, CVC and billing address are collected securely by Stripe.',
+      },
+    },
     line_items: [{
       quantity: 1,
       price_data: {
@@ -27,7 +37,9 @@ export async function createDonationCheckout({ donationId, amount, holderName, s
         unit_amount: Math.round(Number(amount)),
         product_data: {
           name: productName || 'The Sound She Carries donation',
-          description: holderName ? `Gift from ${holderName}` : 'Live Recording · Lian Ministrel',
+          description: holderName
+            ? `${holderName} · ${Math.round(Number(amount)).toLocaleString()} F CFA`
+            : 'Live Recording · Lian Ministrel',
         },
       },
     }],
@@ -37,6 +49,8 @@ export async function createDonationCheckout({ donationId, amount, holderName, s
       donation_id: String(donationId),
       amount: String(Math.round(Number(amount))),
       holder_name: holderName || '',
+      email: email || '',
+      phone: phone || '',
     },
   });
 

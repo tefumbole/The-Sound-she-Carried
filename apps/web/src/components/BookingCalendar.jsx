@@ -10,7 +10,7 @@ function asDateKey(value) {
   try { return ymd(new Date(value)); } catch { return ''; }
 }
 
-export default function BookingCalendar({ booked = [], pending = [], value, onChange, selectable = true }) {
+export default function BookingCalendar({ booked = [], pending = [], value, onChange, selectable = true, labels }) {
   const today = new Date();
   const todayKey = ymd(today);
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -73,8 +73,8 @@ export default function BookingCalendar({ booked = [], pending = [], value, onCh
       </div>
       <div className="flex items-center justify-between mt-3 pt-2 border-t border-white/10">
         <div className="flex gap-2.5 text-[9px] uppercase tracking-wider text-chrome">
-          <span className="inline-flex items-center gap-1"><i className="cal-dot bg-gold" /> Booked</span>
-          <span className="inline-flex items-center gap-1"><i className="cal-dot bg-white/25" /> Pending</span>
+          <span className="inline-flex items-center gap-1"><i className="cal-dot bg-gold" /> {labels?.booked || 'Booked'}</span>
+          <span className="inline-flex items-center gap-1"><i className="cal-dot bg-white/25" /> {labels?.pending || 'Pending'}</span>
         </div>
         {pretty && <p className="text-xs text-goldSoft">{pretty}</p>}
       </div>
