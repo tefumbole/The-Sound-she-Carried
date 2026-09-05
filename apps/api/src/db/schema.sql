@@ -71,9 +71,56 @@ CREATE TABLE IF NOT EXISTS donations (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   kind VARCHAR(40) NOT NULL DEFAULT 'gift',
+  contributor_id CHAR(36) DEFAULT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  reference VARCHAR(40) DEFAULT NULL,
+  first_name VARCHAR(120) DEFAULT NULL,
   INDEX idx_donations_status (status),
   INDEX idx_donations_ref (campay_ref),
-  INDEX idx_donations_kind (kind)
+  INDEX idx_donations_kind (kind),
+  INDEX idx_donations_contributor (contributor_id),
+  INDEX idx_donations_reference (reference)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contributors (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  first_name VARCHAR(120) DEFAULT NULL,
+  full_name VARCHAR(255) DEFAULT NULL,
+  phone_e164 VARCHAR(50) DEFAULT NULL,
+  phone_digits VARCHAR(20) DEFAULT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_contributors_phone (phone_digits),
+  UNIQUE KEY uk_contributors_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS prophetic_messages (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  scripture_reference VARCHAR(120) NOT NULL,
+  scripture_text TEXT NOT NULL,
+  declaration TEXT NOT NULL,
+  theme VARCHAR(80) NOT NULL,
+  message_family VARCHAR(80) DEFAULT NULL,
+  day_of_week VARCHAR(20) NOT NULL,
+  active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_prophetic_day (day_of_week, active),
+  INDEX idx_prophetic_theme (theme, active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS contributor_prophetic_messages (
+  id CHAR(36) NOT NULL PRIMARY KEY,
+  contributor_id CHAR(36) NOT NULL,
+  contribution_id CHAR(36) NOT NULL,
+  prophetic_message_id CHAR(36) NOT NULL,
+  sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uk_cpm_contribution (contribution_id),
+  INDEX idx_cpm_contributor (contributor_id),
+  INDEX idx_cpm_message (prophetic_message_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tasks (

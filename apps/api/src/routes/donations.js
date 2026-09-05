@@ -11,20 +11,54 @@ import {
 import { createDonationCheckout, getCheckoutStatus } from '../services/stripeService.js';
 import { notifyDonationSuccess } from '../services/donationNotify.js';
 import { toE164CM, looksLikePhone } from '../utils/phone.js';
+import {
+  assignPropheticWord,
+  donationReference,
+  firstNameFrom,
+  getConfirmationPayload,
+} from '../services/propheticSelect.js';
+import { buildDonationConfirmationPdf } from '../services/donationConfirmationPdf.js';
 
 const router = Router();
 
-async function markSuccessful(pool, donation) {
-  if (donation.status === 'successful') return donation;
-  await pool.query(
-    `UPDATE donations SET status = 'successful', updated_at = NOW() WHERE id = ? AND status <> 'successful'`,
-    [donation.id]
-  );
-  const [[fresh]] = await pool.query('SELECT * FROM donations WHERE id = ?', [donation.id]);
-  if (fresh.status === 'successful' && !fresh.notified_at) {
+export async function markSuccessful(pool, donation) {
+  const conn = await pool.getConnection();
+  let fresh = donation;
+  let confirmation = null;
+  let shouldNotify = false;
+  try {
+    await conn.beginTransaction();
+    const [[locked]] = await conn.query('SELECT * FROM donations WHERE id = ? FOR UPDATE', [donation.id]);
+    if (!locked) {
+      await conn.rollback();
+      return donation;
+    }
+    if (locked.status !== 'successful') {
+      await conn.query(
+        `UPDATE donations SET status = 'successful', updated_at = NOW() WHERE id = ? AND status <> 'successful'`,
+        [locked.id]
+      );
+    }
+    const [[updated]] = await conn.query('SELECT * FROM donations WHERE id = ?', [locked.id]);
+    confirmation = await assignPropheticWord(conn, updated);
+    const [[row]] = await conn.query('SELECT * FROM donations WHERE id = ?', [locked.id]);
+    fresh = row;
+    shouldNotify = !row.notified_at;
+    await conn.commit();
+  } catch (err) {
+    try { await conn.rollback(); } catch { /* ignore */ }
+    throw err;
+  } finally {
+    conn.release();
+  }
+
+  if (shouldNotify) {
     try {
-      await notifyDonationSuccess(fresh);
-      await pool.query('UPDATE donations SET notified_at = NOW() WHERE id = ?', [fresh.id]);
+      await notifyDonationSuccess(fresh, confirmation);
+      await pool.query(
+        'UPDATE donations SET notified_at = NOW() WHERE id = ? AND notified_at IS NULL',
+        [fresh.id]
+      );
     } catch (err) {
       console.error('Donation notify failed:', err.message);
     }
@@ -85,6 +119,8 @@ router.post('/initiate', async (req, res) => {
   const cardPhone = method === 'card' ? toE164CM(req.body.phone) : null;
   const whatsapp = toE164CM(req.body.whatsapp_phone || req.body.phone) || momoPhone || cardPhone;
   const id = randomUUID();
+  const reference = donationReference(id);
+  const firstName = firstNameFrom(holderName);
   const pool = getPool();
   const appUrl = String(process.env.APP_URL || '').replace(/\/$/, '');
 
@@ -102,11 +138,11 @@ router.post('/initiate', async (req, res) => {
     if (!checkout.success) return res.status(400).json({ error: checkout.message });
 
     await pool.query(
-      `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, campay_link, kind)
-       VALUES (?, ?, 'card', ?, ?, ?, 'pending', ?, ?, ?)`,
-      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, checkout.sessionId, checkout.url, kind]
+      `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, campay_link, kind, email, reference, first_name)
+       VALUES (?, ?, 'card', ?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?)`,
+      [id, amount, toE164CM(req.body.phone) || null, holderName || 'Card donor', whatsapp, checkout.sessionId, checkout.url, kind, email || null, reference, firstName]
     );
-    return res.json({ id, status: 'pending', checkout_url: checkout.url });
+    return res.json({ id, status: 'pending', checkout_url: checkout.url, reference });
   }
 
   const collect = await collectPayment({
@@ -118,15 +154,16 @@ router.post('/initiate', async (req, res) => {
   if (!collect.success) return res.status(400).json({ error: collect.message });
 
   await pool.query(
-    `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, kind)
-     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
-    [id, amount, method, momoPhone, holderName || null, whatsapp, collect.reference, kind]
+    `INSERT INTO donations (id, amount, method, momo_phone, holder_name, whatsapp_phone, status, campay_ref, kind, email, reference, first_name)
+     VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?)`,
+    [id, amount, method, momoPhone, holderName || null, whatsapp, collect.reference, kind, email || null, reference, firstName]
   );
 
   res.json({
     id,
     status: 'pending',
-    reference: collect.reference,
+    reference,
+    provider_reference: collect.reference,
     message: collect.message,
     holder_name: holderName || null,
   });
@@ -148,7 +185,8 @@ router.get('/:id/status', async (req, res) => {
         donation.holder_name = result.holderName;
       }
       const fresh = await markSuccessful(pool, donation);
-      return res.json({ id: fresh.id, status: fresh.status, amount: fresh.amount });
+      const confirmation = await getConfirmationPayload(pool, fresh);
+      return res.json(confirmation);
     }
     if (result.status === 'FAILED') {
       await pool.query(
@@ -159,7 +197,31 @@ router.get('/:id/status', async (req, res) => {
     }
   }
 
-  res.json({ id: donation.id, status: donation.status, amount: donation.amount, method: donation.method });
+  if (donation.status === 'successful') {
+    return res.json(await getConfirmationPayload(pool, donation));
+  }
+  res.json({
+    id: donation.id,
+    status: donation.status,
+    amount: donation.amount,
+    method: donation.method,
+    reference: donation.reference || null,
+  });
+});
+
+router.get('/:id/confirmation.pdf', async (req, res) => {
+  const pool = getPool();
+  const [[donation]] = await pool.query('SELECT * FROM donations WHERE id = ?', [req.params.id]);
+  if (!donation) return res.status(404).json({ error: 'Donation not found' });
+  if (donation.status !== 'successful') {
+    return res.status(409).json({ error: 'Confirmation is available after a successful contribution.' });
+  }
+  const payload = await getConfirmationPayload(pool, donation);
+  const pdf = await buildDonationConfirmationPdf(payload);
+  const filename = `${payload.reference || 'TSSC'}-confirmation.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(pdf);
 });
 
 export async function handleCampayWebhookPayload(payload, headers = {}) {
@@ -201,9 +263,14 @@ export async function settleStripeDonation(session) {
   const [[donation]] = await pool.query('SELECT * FROM donations WHERE id = ?', [donationId]);
   if (!donation) return null;
   const name = session.customer_details?.name || donation.holder_name;
-  if (name) {
-    await pool.query('UPDATE donations SET holder_name = ? WHERE id = ?', [name, donation.id]);
-    donation.holder_name = name;
+  const email = session.customer_details?.email || donation.email;
+  if (name || email) {
+    await pool.query(
+      'UPDATE donations SET holder_name = COALESCE(?, holder_name), email = COALESCE(?, email) WHERE id = ?',
+      [name || null, email || null, donation.id]
+    );
+    if (name) donation.holder_name = name;
+    if (email) donation.email = email;
   }
   return markSuccessful(pool, donation);
 }

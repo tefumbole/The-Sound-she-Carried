@@ -30,22 +30,45 @@ function underline(title) {
   return `*${title}*\n━━━━━━━━━━━━━━━━`;
 }
 
-export async function notifyDonationSuccess(donation) {
+function donorPropheticMessage(donation, confirmation) {
+  const name = confirmation?.first_name || donation.first_name || donation.holder_name || 'Friend';
+  const day = (confirmation?.day_label || 'Today').toUpperCase();
+  const ref = confirmation?.reference || donation.reference || '';
+  const heading = String(confirmation?.title || '').trim();
+  const word = confirmation?.message || '';
+  const verseRef = confirmation?.scripture_reference || '';
+  const verse = confirmation?.scripture_text || '';
+  const declaration = confirmation?.declaration || '';
+  return (
+    `✨ *THE SOUND SHE CARRIES* ✨\n\n` +
+    `Dear ${name},\n\n` +
+    `Your contribution of ${formatXaf(donation.amount)} has been successfully received.\n\n` +
+    `Thank you for standing with this vision.\n\n` +
+    `📖 *YOUR PROPHETIC WORD FOR ${day}*\n\n` +
+    (heading ? `*${heading}*\n\n` : '') +
+    `"${word}"\n\n` +
+    `📖 *${verseRef}*\n` +
+    `"${verse}"\n\n` +
+    `🙏 *I DECLARE*\n\n` +
+    `"${declaration}"\n\n` +
+    `May God richly bless you for being part of this journey.\n\n` +
+    `Reference: ${ref}\n\n` +
+    `THE SOUND SHE CARRIES\n` +
+    `Live Recording`
+  );
+}
+
+export async function notifyDonationSuccess(donation, confirmation = null) {
   const snap = await getCampaignSnapshot();
   if (!snap.settings) return;
 
-  const name = donation.holder_name || 'Friend';
+  const name = confirmation?.first_name || donation.holder_name || 'Friend';
   const methodLabel = donation.method === 'card' ? 'Visa' : 'MoMo / OM';
   const kind = donation.kind === 'gold_sponsor' ? 'Gold Sponsor' : 'Gift';
   const phoneDisplay = prettyPhone(donorPhone(donation));
 
   if (Number(snap.settings.notify_donor) === 1 && donation.whatsapp_phone) {
-    const donorMsg =
-      `${underline('THANK YOU / MERCI')}\n\n` +
-      `🙏 ${name}\n` +
-      `💵 ${formatXaf(donation.amount)}\n` +
-      `✨ The Sound She Carries\n\n` +
-      `📊 ${formatXaf(snap.raised)} / ${formatXaf(snap.target)} (${snap.percent}%)`;
+    const donorMsg = donorPropheticMessage(donation, confirmation);
     const result = await sendTextMessage(donation.whatsapp_phone, donorMsg, 'donation_donor');
     await logWa(donation.whatsapp_phone, 'donation_donor', donorMsg, result.success ? 'sent' : 'failed', result.error);
   }

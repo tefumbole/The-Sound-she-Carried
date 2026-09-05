@@ -11,6 +11,7 @@ import TaskInvitePage from './pages/TaskInvitePage';
 import LoginPage from './pages/admin/LoginPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import DonationsPage from './pages/admin/DonationsPage';
+import { PropheticHistoryPage, PropheticMessageListPage } from './pages/admin/PropheticMessagesPages';
 import CampaignSettingsPage from './pages/admin/CampaignSettingsPage';
 import UsersPage from './pages/admin/UsersPage';
 import UserFormPage from './pages/admin/UserFormPage';
@@ -45,6 +46,8 @@ export default function App() {
       <Route path="/admin" element={<Guard><AdminLayout /></Guard>}>
         <Route index element={<DashboardPage />} />
         <Route path="donations" element={<DonationsPage />} />
+        <Route path="prophetic-messages/history" element={<PropheticHistoryPage />} />
+        <Route path="prophetic-messages" element={<PropheticMessageListPage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="settings" element={<CampaignSettingsPage />} />
         <Route path="users" element={<UsersPage />} />

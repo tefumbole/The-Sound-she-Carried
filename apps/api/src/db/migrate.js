@@ -40,12 +40,20 @@ try {
     const match = statement.match(/CREATE TABLE IF NOT EXISTS (\w+)/i);
     console.log('Created:', match?.[1] || 'table');
   }
-  try {
-    await pool.query("ALTER TABLE donations ADD COLUMN kind VARCHAR(40) NOT NULL DEFAULT 'gift'");
-    console.log('Altered: donations.kind');
-  } catch {
-    /* already exists */
+  async function addColumn(table, ddl, label) {
+    try {
+      await pool.query(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+      console.log('Altered:', label);
+    } catch {
+      /* already exists */
+    }
   }
+  await addColumn('donations', "kind VARCHAR(40) NOT NULL DEFAULT 'gift'", 'donations.kind');
+  await addColumn('donations', 'contributor_id CHAR(36) DEFAULT NULL', 'donations.contributor_id');
+  await addColumn('donations', 'email VARCHAR(255) DEFAULT NULL', 'donations.email');
+  await addColumn('donations', 'reference VARCHAR(40) DEFAULT NULL', 'donations.reference');
+  await addColumn('donations', 'first_name VARCHAR(120) DEFAULT NULL', 'donations.first_name');
+  await addColumn('prophetic_messages', 'message_family VARCHAR(80) DEFAULT NULL', 'prophetic_messages.message_family');
   console.log('Migration complete.');
   await getPool().end();
 } catch (error) {

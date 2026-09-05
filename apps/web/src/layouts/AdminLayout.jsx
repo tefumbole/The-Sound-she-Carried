@@ -5,10 +5,12 @@ const groups = [
   {
     label: 'Campaign',
     home: '/admin',
-    match: (p) => p === '/admin' || ['/admin/donations', '/admin/bookings', '/admin/settings'].includes(p),
+    match: (p) => p === '/admin' || ['/admin/donations', '/admin/bookings', '/admin/settings'].includes(p) || p.startsWith('/admin/prophetic-messages'),
     items: [
       { to: '/admin', label: 'Dashboard', end: true, perm: 'campaign.view' },
       { to: '/admin/donations', label: 'Donations', perm: 'donations.view' },
+      { to: '/admin/prophetic-messages', label: 'Prophetic Messages', perm: 'prophetic_messages.view', end: true },
+      { to: '/admin/prophetic-messages/history', label: 'Prophetic History', perm: 'prophetic_messages.view' },
       { to: '/admin/bookings', label: 'Bookings', perm: 'bookings.view' },
       { to: '/admin/settings', label: 'Settings', perm: 'campaign.edit' },
     ],

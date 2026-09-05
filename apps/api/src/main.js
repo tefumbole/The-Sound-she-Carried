@@ -20,6 +20,7 @@ import announcementsRoutes, { processScheduledAnnouncements } from './routes/ann
 import lettersRoutes from './routes/letters.js';
 import whatsappRoutes from './routes/whatsapp.js';
 import bookingsRoutes from './routes/bookings.js';
+import propheticMessagesRoutes from './routes/propheticMessages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -79,6 +80,7 @@ app.use('/announcements', announcementsRoutes);
 app.use('/letters', lettersRoutes);
 app.use('/whatsapp', whatsappRoutes);
 app.use('/bookings', bookingsRoutes);
+app.use('/prophetic-messages', propheticMessagesRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

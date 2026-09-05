@@ -2,6 +2,7 @@ import './../env.js';
 import { randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './pool.js';
+import { seedPropheticMessages } from './propheticSeed.js';
 
 const PERMISSIONS = [
   ['campaign.view', 'View campaign'],
@@ -32,6 +33,8 @@ const PERMISSIONS = [
   ['bookings.view', 'View bookings'],
   ['bookings.decide', 'Approve or reject bookings'],
   ['menu.bookings', 'Menu bookings'],
+  ['prophetic_messages.view', 'View prophetic messages'],
+  ['prophetic_messages.compose', 'Compose prophetic messages'],
 ];
 
 const ROLE_MAP = {
@@ -44,6 +47,7 @@ const ROLE_MAP = {
     'letters.view', 'letters.compose',
     'menu.campaign', 'menu.users', 'menu.tasks', 'menu.announcements', 'menu.letters',
     'bookings.view', 'menu.bookings',
+    'prophetic_messages.view', 'prophetic_messages.compose',
   ],
   approver: ['letters.view', 'letters.approve', 'menu.letters', 'campaign.view', 'menu.campaign'],
   signer: ['letters.view', 'letters.sign', 'menu.letters', 'campaign.view', 'menu.campaign'],
@@ -180,6 +184,8 @@ try {
       ]
     );
   }
+
+  await seedPropheticMessages(pool);
 
   console.log('Seed complete.');
 } catch (error) {
