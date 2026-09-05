@@ -7,7 +7,42 @@ import { useLang, LangSwitch } from '../i18n/LangContext';
 
 const CONCERT = new Date('2026-09-27T17:00:00+01:00');
 const WHATSAPP = 'https://wa.me/237697470711';
+const INFO_PHONES = [
+  { href: 'https://wa.me/237697470711', label: '+237 6 97 47 07 11' },
+  { href: 'https://wa.me/237670706435', label: '+237 670 70 64 35' },
+];
 const GOLD_TIERS = [500000, 300000, 200000, 100000];
+
+function PosterMeta({ t }) {
+  return (
+    <div className="poster-meta">
+      <p className="poster-meta-row">
+        <span className="poster-meta-lbl">{t.dateLbl} : </span>
+        <span className="poster-meta-val">{t.dateVal}</span>
+      </p>
+      <p className="poster-meta-row">
+        <span className="poster-meta-lbl">{t.venueLbl}: </span>
+        <span className="poster-meta-val">{t.venueVal}</span>
+      </p>
+      <p className="poster-meta-row">
+        <span className="poster-meta-lbl">{t.timeLbl} : </span>
+        <span className="poster-meta-val">{t.timeVal}</span>
+      </p>
+      <div className="poster-meta-rule" />
+      <p className="poster-meta-row">
+        <span className="poster-meta-lbl">{t.infoSponsor} : </span>
+        <span className="poster-meta-val">
+          {INFO_PHONES.map((p, i) => (
+            <span key={p.href}>
+              {i > 0 && ' | '}
+              <a href={p.href} target="_blank" rel="noreferrer">{p.label}</a>
+            </span>
+          ))}
+        </span>
+      </p>
+    </div>
+  );
+}
 
 function useCountdown(target) {
   const [left, setLeft] = useState({ d: 0, h: 0, m: 0, s: 0, done: false });
@@ -128,8 +163,19 @@ export default function LandingPage() {
       </header>
 
       <div className="flex-1 min-h-0 flex flex-col md:flex-row">
-        <section className="relative overflow-hidden h-[28svh] min-h-[10rem] max-h-52 md:h-full md:max-h-none md:w-[40%] lg:w-[42%] shrink-0 bg-[#d8d8d8]">
-          <img src="/lily.jpg" alt="Lian Ministrel" className="hero-photo" />
+        <section className="flex flex-col bg-black w-full md:h-full md:w-[48%] lg:w-[50%] shrink-0 min-h-0">
+          <div className="flex items-center justify-center bg-[#e8e8e8] h-[32svh] md:h-auto md:flex-1 md:min-h-0">
+            <img
+              src="/lily.png"
+              alt="The Sound She Carries — Lian Ministrel"
+              className="hero-photo"
+              width="1254"
+              height="1254"
+              decoding="async"
+              fetchPriority="high"
+            />
+          </div>
+          <PosterMeta t={t} />
         </section>
 
         <section className="hero-right flex-1 min-h-0 px-3 sm:px-5 py-3 md:py-4 pb-[max(0.85rem,env(safe-area-inset-bottom))]">
@@ -139,13 +185,7 @@ export default function LandingPage() {
               <h1 className="font-display font-bold text-[1.45rem] sm:text-3xl text-center leading-tight mt-1 text-[#f6e7b2]">
                 {t.title}
               </h1>
-              <p className="text-center italic font-serif text-goldSoft mt-0.5 text-base">{t.live}</p>
-              <p className="text-center mt-2 text-xs sm:text-sm text-chrome">{t.when}</p>
-              <p className="text-center text-xs sm:text-sm text-white/90">{stats?.venue || t.venue}</p>
-
-              <div className="gold-line my-3" />
-
-              <div className="countdown-row">
+              <div className="countdown-row mt-3">
                 {left.done ? (
                   <p className="font-display text-2xl gold-text text-center w-full">{t.liveNow}</p>
                 ) : (
