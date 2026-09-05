@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useHolderLookup } from '../hooks/useHolderLookup';
@@ -31,6 +31,8 @@ export default function BookingPage() {
   const [eventTime, setEventTime] = useState('17:00');
   const [description, setDescription] = useState('');
   const [signature, setSignature] = useState(null);
+  const [signOpen, setSignOpen] = useState(false);
+  const [signDraft, setSignDraft] = useState(null);
   const [agreed, setAgreed] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState('');
@@ -42,6 +44,9 @@ export default function BookingPage() {
   useEffect(() => {
     api('/bookings/calendar').then(setCalendar).catch(() => {});
   }, []);
+
+  const signPreview = useMemo(() => (signature ? URL.createObjectURL(signature) : ''), [signature]);
+  useEffect(() => () => { if (signPreview) URL.revokeObjectURL(signPreview); }, [signPreview]);
 
   const prettyDate = eventDate
     ? new Date(`${eventDate}T12:00:00`).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', {
@@ -74,6 +79,7 @@ export default function BookingPage() {
     }
     if (!signature) {
       setError(t.errSign);
+      setSignOpen(true);
       return;
     }
     if (!otpSent) {
@@ -189,10 +195,33 @@ export default function BookingPage() {
                   </div>
                 </Step>
 
-                <Step n="4" title={t.stepSign}>
-                  <p className="text-sm text-chrome mb-2">{t.signHere}</p>
-                  <SignaturePad onChange={setSignature} clearLabel={t.clearSign} />
-                  {signature && <p className="text-xs text-emerald-300 mt-1">{t.signed}</p>}
+                <Step n="4" title={t.digitalSign}>
+                  {signature ? (
+                    <div className="rounded-xl border border-gold/30 bg-white p-3">
+                      <img src={signPreview} alt="" className="w-full max-h-28 object-contain" />
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-emerald-700 font-semibold">✅ {t.signed}</p>
+                        <button type="button" onClick={() => { setSignDraft(null); setSignOpen(true); }} className="text-sm text-[#8B5A12] underline">
+                          {t.changeSign}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-500/70 bg-[#fff6e5] p-4 text-[#5c3d14]">
+                      <p className="font-bold flex items-center gap-2">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-white text-sm">!</span>
+                        {t.signRequired}
+                      </p>
+                      <p className="text-sm mt-2">{t.signNeed}</p>
+                      <button
+                        type="button"
+                        onClick={() => { setSignDraft(null); setSignOpen(true); }}
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-700 bg-white px-3 min-h-10 text-sm font-semibold text-amber-800"
+                      >
+                        ✎ {t.addSign}
+                      </button>
+                    </div>
+                  )}
                   <label className="flex items-start gap-3 text-sm text-chrome mt-4 rounded-2xl p-3 border border-gold/25 bg-white/5">
                     <input type="checkbox" className="mt-1.5 h-4 w-4 accent-[#d4af37]" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} required />
                     <span>
@@ -240,6 +269,31 @@ export default function BookingPage() {
           </form>
         )}
       </main>
+
+      {signOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-navy/75 p-0 sm:p-4">
+          <div className="glass-navy w-full max-w-lg rounded-t-3xl sm:rounded-2xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display text-xl font-bold text-[#f6e7b2]">🖋️ {t.digitalSign}</h3>
+              <button type="button" onClick={() => setSignOpen(false)} className="text-chrome min-h-10">{t.cancel}</button>
+            </div>
+            <p className="text-sm text-chrome mb-3">{t.signHere}</p>
+            <SignaturePad onChange={setSignDraft} clearLabel={t.clearSign} />
+            <button
+              type="button"
+              disabled={!signDraft}
+              onClick={() => {
+                setSignature(signDraft);
+                setSignOpen(false);
+                setError('');
+              }}
+              className="btn-donate w-full mt-4 rounded-xl min-h-12 font-semibold disabled:opacity-50"
+            >
+              {t.saveSign}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
